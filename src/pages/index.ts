@@ -1,0 +1,9 @@
+export { LoginPage } from './auth';
+export { DashboardPage } from './dashboard';
+export { BrandsPage } from './brands';
+export { SolarPanelsPage } from './solar-panels';
+export { InvertersPage } from './inverters';
+export { StructuresPage } from './structures';
+export { MiscItemsPage } from './misc-items';
+export { QuoteBuilderPage } from './quote-builder';
+export { QuotesPage } from './quotes';

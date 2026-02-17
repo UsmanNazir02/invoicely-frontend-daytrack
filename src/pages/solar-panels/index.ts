@@ -1,0 +1,1 @@
+export { SolarPanelsPage } from './SolarPanelsPage';
