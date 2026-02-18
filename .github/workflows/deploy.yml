@@ -28,7 +28,8 @@ jobs:
       - name: Deploy to cPanel via Rsync
         uses: Burnett01/rsync-deployments@7.0.1
         with:
-          switches: -avzr --delete
+          # Changed switches to -avz to ensure .htaccess is included
+          switches: -avz --delete 
           path: ./dist/
           remote_path: /home/sigmolabs/invoicely.thefuturepower.com/
           remote_host: 198.187.31.203
