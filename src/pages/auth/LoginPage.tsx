@@ -31,7 +31,7 @@ export function LoginPage() {
         setIsLoading(true);
         try {
             await login(data.email, data.password);
-            toast.success('Login successful!');
+            toast.success('Loginsuccessful!');
             navigate('/');
         } catch (error: unknown) {
             const err = error as { response?: { data?: { message?: string } } };
