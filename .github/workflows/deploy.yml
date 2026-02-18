@@ -1,0 +1,37 @@
+name: Deploy Frontend via SSH
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install and Build
+        run: |
+          npm install
+          npm run build
+        env:
+          # This ensures your frontend points to your live backend
+          VITE_API_URL: https://api.thefuturepower.com/api
+
+      - name: Deploy to cPanel via Rsync
+        uses: Burnett01/rsync-deployments@7.0.1
+        with:
+          switches: -avzr --delete
+          path: ./dist/
+          remote_path: /home/sigmolabs/invoicely.thefuturepower.com/
+          remote_host: 198.187.31.203
+          remote_user: sigmolabs
+          remote_port: 21098
+          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
