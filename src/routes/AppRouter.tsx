@@ -13,6 +13,7 @@ import {
     MiscItemsPage,
     QuoteBuilderPage,
     QuotesPage,
+    QuoteDetailsPage,
 } from '../pages';
 
 function AppLayout({ children }: { children: React.ReactNode }) {
@@ -124,6 +125,16 @@ export function AppRouter() {
                         <ProtectedRoute>
                             <AppLayout>
                                 <QuotesPage />
+                            </AppLayout>
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/quotes/:id"
+                    element={
+                        <ProtectedRoute>
+                            <AppLayout>
+                                <QuoteDetailsPage />
                             </AppLayout>
                         </ProtectedRoute>
                     }

@@ -67,7 +67,7 @@ export interface CreateBrandDto {
     isActive?: boolean;
 }
 
-export interface UpdateBrandDto extends Partial<CreateBrandDto> { }
+export type UpdateBrandDto = Partial<CreateBrandDto>;
 
 // Solar Panel types
 export interface SolarPanel {
@@ -92,7 +92,7 @@ export interface CreateSolarPanelDto {
     isActive?: boolean;
 }
 
-export interface UpdateSolarPanelDto extends Partial<CreateSolarPanelDto> { }
+export type UpdateSolarPanelDto = Partial<CreateSolarPanelDto>;
 
 // Inverter types
 export interface Inverter {
@@ -117,7 +117,7 @@ export interface CreateInverterDto {
     isActive?: boolean;
 }
 
-export interface UpdateInverterDto extends Partial<CreateInverterDto> { }
+export type UpdateInverterDto = Partial<CreateInverterDto>;
 
 // Structure types
 export const StructureType = {
@@ -145,7 +145,7 @@ export interface CreateStructureDto {
     isActive?: boolean;
 }
 
-export interface UpdateStructureDto extends Partial<CreateStructureDto> { }
+export type UpdateStructureDto = Partial<CreateStructureDto>;
 
 // Misc Item types
 export const MiscItemType = {
@@ -182,7 +182,7 @@ export interface CreateMiscItemDto {
     isActive?: boolean;
 }
 
-export interface UpdateMiscItemDto extends Partial<CreateMiscItemDto> { }
+export type UpdateMiscItemDto = Partial<CreateMiscItemDto>;
 
 // Filter types
 export interface FilterDto {
@@ -268,6 +268,7 @@ export interface CreateQuoteDto {
     discountPercentage?: number;
     notes?: string;
     validUntil?: string;
+    status?: QuoteStatus;
     items: CreateQuoteItemDto[];
 }
 

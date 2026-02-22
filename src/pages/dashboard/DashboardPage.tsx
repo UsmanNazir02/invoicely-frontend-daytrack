@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Sun, Zap, Building, Package, Tag, TrendingUp, ArrowUpRight, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Card, CardContent, Button } from '../../components';
 import { useAuth } from '../../contexts';
 import {
     brandService,
@@ -43,150 +42,328 @@ export function DashboardPage() {
     const stats = [
         {
             name: 'Brands',
-            value: brands?.items?.length || (Array.isArray(brands) ? brands.length : 0),
+            value: brands?.items?.length ?? (Array.isArray(brands) ? brands.length : 0),
             icon: Tag,
-            color: 'bg-blue-500',
-            lightColor: 'bg-blue-50',
-            textColor: 'text-blue-600',
+            lightColor: '#eff6ff',
+            iconColor: '#2563eb',
+            borderColor: '#dbeafe',
             href: '/brands',
         },
         {
             name: 'Solar Panels',
-            value: solarPanels?.items?.length || (Array.isArray(solarPanels) ? solarPanels.length : 0),
+            value: solarPanels?.items?.length ?? (Array.isArray(solarPanels) ? solarPanels.length : 0),
             icon: Sun,
-            color: 'bg-yellow-500',
-            lightColor: 'bg-yellow-50',
-            textColor: 'text-yellow-600',
+            lightColor: '#fefce8',
+            iconColor: '#ca8a04',
+            borderColor: '#fef08a',
             href: '/solar-panels',
         },
         {
             name: 'Inverters',
-            value: inverters?.items?.length || (Array.isArray(inverters) ? inverters.length : 0),
+            value: inverters?.items?.length ?? (Array.isArray(inverters) ? inverters.length : 0),
             icon: Zap,
-            color: 'bg-green-500',
-            lightColor: 'bg-green-50',
-            textColor: 'text-green-600',
+            lightColor: '#f0fdf4',
+            iconColor: '#16a34a',
+            borderColor: '#bbf7d0',
             href: '/inverters',
         },
         {
             name: 'Structures',
-            value: structures?.items?.length || (Array.isArray(structures) ? structures.length : 0),
+            value: structures?.items?.length ?? (Array.isArray(structures) ? structures.length : 0),
             icon: Building,
-            color: 'bg-purple-500',
-            lightColor: 'bg-purple-50',
-            textColor: 'text-purple-600',
+            lightColor: '#faf5ff',
+            iconColor: '#7c3aed',
+            borderColor: '#e9d5ff',
             href: '/structures',
         },
         {
             name: 'Misc Items',
-            value: miscItems?.items?.length || (Array.isArray(miscItems) ? miscItems.length : 0),
+            value: miscItems?.items?.length ?? (Array.isArray(miscItems) ? miscItems.length : 0),
             icon: Package,
-            color: 'bg-orange-500',
-            lightColor: 'bg-orange-50',
-            textColor: 'text-orange-600',
+            lightColor: '#fff7ed',
+            iconColor: '#ea580c',
+            borderColor: '#fed7aa',
             href: '/misc-items',
         },
     ];
 
     return (
-        <div className="space-y-8 animate-fadeIn">
-            {/* Welcome Section */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div style={{ padding: '28px 32px', maxWidth: '1400px', margin: '0 auto' }}>
+
+            {/* ── Header ── */}
+            <div style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                gap: '16px',
+                marginBottom: '32px',
+                flexWrap: 'wrap',
+            }}>
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">
+                    <h1 style={{
+                        margin: '0 0 6px',
+                        fontSize: '24px',
+                        fontWeight: '800',
+                        color: '#0f172a',
+                        letterSpacing: '-0.4px',
+                    }}>
                         Welcome back, {user?.fullName?.split(' ')[0] || 'Admin'}! 👋
                     </h1>
-                    <p className="text-gray-500 mt-1">
+                    <p style={{ margin: 0, fontSize: '14px', color: '#64748b' }}>
                         Here's what's happening with your solar products today.
                     </p>
                 </div>
+
                 {user?.role === UserRole.ADMIN && (
-                    <Link to="/quote-builder">
-                        <Button>
-                            <FileText className="h-4 w-4 mr-2" />
+                    <Link to="/quote-builder" style={{ textDecoration: 'none', flexShrink: 0 }}>
+                        <button
+                            style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                height: '40px',
+                                padding: '0 18px',
+                                background: 'linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)',
+                                color: '#fff',
+                                fontWeight: '600',
+                                fontSize: '14px',
+                                border: 'none',
+                                borderRadius: '9px',
+                                cursor: 'pointer',
+                                boxShadow: '0 2px 10px rgba(37,99,235,0.28)',
+                                transition: 'transform 0.15s, box-shadow 0.15s',
+                                whiteSpace: 'nowrap',
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-1px)';
+                                e.currentTarget.style.boxShadow = '0 6px 18px rgba(37,99,235,0.38)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 2px 10px rgba(37,99,235,0.28)';
+                            }}
+                        >
+                            <FileText style={{ width: '15px', height: '15px' }} />
                             Create Quote
-                        </Button>
+                        </button>
                     </Link>
                 )}
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* ── Stats Grid ── */}
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                gap: '16px',
+                marginBottom: '32px',
+            }}>
                 {stats.map((stat) => (
-                    <Link key={stat.name} to={stat.href}>
-                        <Card hover className="h-full">
-                            <CardContent className="py-5">
-                                <div className="flex items-center justify-between">
-                                    <div className={`p-3 rounded-xl ${stat.lightColor}`}>
-                                        <stat.icon className={`h-6 w-6 ${stat.textColor}`} />
-                                    </div>
-                                    <ArrowUpRight className="h-4 w-4 text-gray-400" />
+                    <Link
+                        key={stat.name}
+                        to={stat.href}
+                        style={{ textDecoration: 'none' }}
+                    >
+                        <div
+                            style={{
+                                background: '#fff',
+                                border: '1px solid #f1f5f9',
+                                borderRadius: '14px',
+                                padding: '20px',
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04)',
+                                transition: 'transform 0.15s, box-shadow 0.15s',
+                                cursor: 'pointer',
+                                height: '100%',
+                                boxSizing: 'border-box',
+                            }}
+                            onMouseEnter={(e) => {
+                                (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
+                                (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 16px rgba(0,0,0,0.10)';
+                            }}
+                            onMouseLeave={(e) => {
+                                (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+                                (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04)';
+                            }}
+                        >
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                                <div style={{
+                                    width: '40px',
+                                    height: '40px',
+                                    borderRadius: '10px',
+                                    background: stat.lightColor,
+                                    border: `1px solid ${stat.borderColor}`,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    flexShrink: 0,
+                                }}>
+                                    <stat.icon style={{ width: '18px', height: '18px', color: stat.iconColor }} />
                                 </div>
-                                <div className="mt-4">
-                                    <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
-                                    <p className="text-sm text-gray-500 mt-1">{stat.name}</p>
-                                </div>
-                            </CardContent>
-                        </Card>
+                                <ArrowUpRight style={{ width: '15px', height: '15px', color: '#cbd5e1' }} />
+                            </div>
+                            <p style={{
+                                margin: '0 0 4px',
+                                fontSize: '30px',
+                                fontWeight: '800',
+                                color: '#0f172a',
+                                letterSpacing: '-0.5px',
+                                lineHeight: 1,
+                            }}>
+                                {stat.value}
+                            </p>
+                            <p style={{ margin: 0, fontSize: '13px', color: '#64748b', fontWeight: '500' }}>
+                                {stat.name}
+                            </p>
+                        </div>
                     </Link>
                 ))}
             </div>
 
-            {/* Quick Actions */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                    <CardContent className="py-8">
-                        <div className="flex items-start gap-4">
-                            <div className="p-4 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl">
-                                <TrendingUp className="h-8 w-8 text-white" />
-                            </div>
-                            <div className="flex-1">
-                                <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                                    Quick Start Guide
-                                </h2>
-                                <p className="text-gray-600 mb-4">
-                                    Get started by adding your products. First, add brands, then add solar panels, inverters, structures, and miscellaneous items.
-                                </p>
-                                <div className="flex flex-wrap gap-2">
-                                    <Link to="/brands">
-                                        <Button variant="outline" size="sm">
-                                            Add Brands
-                                        </Button>
-                                    </Link>
-                                    <Link to="/solar-panels">
-                                        <Button variant="outline" size="sm">
-                                            Add Panels
-                                        </Button>
-                                    </Link>
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+            {/* ── Quick Actions ── */}
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                gap: '20px',
+            }}>
 
-                <Card>
-                    <CardContent className="py-8">
-                        <div className="flex items-start gap-4">
-                            <div className="p-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl">
-                                <FileText className="h-8 w-8 text-white" />
-                            </div>
-                            <div className="flex-1">
-                                <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                                    Create Your First Quote
-                                </h2>
-                                <p className="text-gray-600 mb-4">
-                                    Once you have products set up, use the Quote Builder to create professional quotes for your customers.
-                                </p>
-                                <Link to="/quote-builder">
-                                    <Button size="sm">
-                                        Start Building
-                                        <ArrowUpRight className="h-4 w-4 ml-2" />
-                                    </Button>
-                                </Link>
-                            </div>
+                {/* Quick Start Guide */}
+                <div style={{
+                    background: '#fff',
+                    border: '1px solid #f1f5f9',
+                    borderRadius: '16px',
+                    padding: '28px',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04)',
+                    display: 'flex',
+                    gap: '20px',
+                    alignItems: 'flex-start',
+                }}>
+                    <div style={{
+                        flexShrink: 0,
+                        width: '52px',
+                        height: '52px',
+                        borderRadius: '14px',
+                        background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 4px 12px rgba(37,99,235,0.30)',
+                    }}>
+                        <TrendingUp style={{ width: '24px', height: '24px', color: '#fff' }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <h2 style={{ margin: '0 0 8px', fontSize: '17px', fontWeight: '700', color: '#0f172a' }}>
+                            Quick Start Guide
+                        </h2>
+                        <p style={{ margin: '0 0 16px', fontSize: '14px', color: '#64748b', lineHeight: 1.6 }}>
+                            Get started by adding your products. First add brands, then solar panels, inverters, structures, and misc items.
+                        </p>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            <Link to="/brands" style={{ textDecoration: 'none' }}>
+                                <button style={{
+                                    height: '34px',
+                                    padding: '0 14px',
+                                    fontSize: '13px',
+                                    fontWeight: '600',
+                                    color: '#2563eb',
+                                    background: '#eff6ff',
+                                    border: '1px solid #bfdbfe',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    transition: 'background 0.15s',
+                                }}
+                                    onMouseEnter={(e) => { e.currentTarget.style.background = '#dbeafe'; }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.background = '#eff6ff'; }}
+                                >
+                                    Add Brands
+                                </button>
+                            </Link>
+                            <Link to="/solar-panels" style={{ textDecoration: 'none' }}>
+                                <button style={{
+                                    height: '34px',
+                                    padding: '0 14px',
+                                    fontSize: '13px',
+                                    fontWeight: '600',
+                                    color: '#2563eb',
+                                    background: '#eff6ff',
+                                    border: '1px solid #bfdbfe',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    transition: 'background 0.15s',
+                                }}
+                                    onMouseEnter={(e) => { e.currentTarget.style.background = '#dbeafe'; }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.background = '#eff6ff'; }}
+                                >
+                                    Add Panels
+                                </button>
+                            </Link>
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
+
+                {/* Create Quote */}
+                <div style={{
+                    background: '#fff',
+                    border: '1px solid #f1f5f9',
+                    borderRadius: '16px',
+                    padding: '28px',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04)',
+                    display: 'flex',
+                    gap: '20px',
+                    alignItems: 'flex-start',
+                }}>
+                    <div style={{
+                        flexShrink: 0,
+                        width: '52px',
+                        height: '52px',
+                        borderRadius: '14px',
+                        background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 4px 12px rgba(22,163,74,0.28)',
+                    }}>
+                        <FileText style={{ width: '24px', height: '24px', color: '#fff' }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <h2 style={{ margin: '0 0 8px', fontSize: '17px', fontWeight: '700', color: '#0f172a' }}>
+                            Create Your First Quote
+                        </h2>
+                        <p style={{ margin: '0 0 16px', fontSize: '14px', color: '#64748b', lineHeight: 1.6 }}>
+                            Once you have products set up, use the Quote Builder to create professional quotes for your customers.
+                        </p>
+                        <Link to="/quote-builder" style={{ textDecoration: 'none' }}>
+                            <button
+                                style={{
+                                    height: '34px',
+                                    padding: '0 16px',
+                                    fontSize: '13px',
+                                    fontWeight: '600',
+                                    color: '#fff',
+                                    background: 'linear-gradient(135deg, #2563eb, #4f46e5)',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    boxShadow: '0 2px 8px rgba(37,99,235,0.28)',
+                                    transition: 'transform 0.15s, box-shadow 0.15s',
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(-1px)';
+                                    e.currentTarget.style.boxShadow = '0 4px 14px rgba(37,99,235,0.38)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(0)';
+                                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(37,99,235,0.28)';
+                                }}
+                            >
+                                Start Building
+                                <ArrowUpRight style={{ width: '14px', height: '14px' }} />
+                            </button>
+                        </Link>
+                    </div>
+                </div>
+
             </div>
         </div>
     );

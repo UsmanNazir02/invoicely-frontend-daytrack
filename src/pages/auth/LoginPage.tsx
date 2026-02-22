@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
-import { Lock, Mail, Zap } from 'lucide-react';
+import { Lock, Mail, Zap, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../contexts';
 
 const loginSchema = z.object({
@@ -31,7 +31,7 @@ export function LoginPage() {
         setIsLoading(true);
         try {
             await login(data.email, data.password);
-            toast.success('Loginsuccessful!');
+            toast.success('Login successful!');
             navigate('/');
         } catch (error: unknown) {
             const err = error as { response?: { data?: { message?: string } } };
@@ -48,189 +48,260 @@ export function LoginPage() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: '#0f172a',
-                padding: '16px',
+                padding: '24px',
+                background: 'linear-gradient(135deg, #eef2ff 0%, #f8fafc 50%, #eff6ff 100%)',
             }}
         >
-            <div style={{ width: '100%', maxWidth: '420px' }}>
-                {/* Card */}
-                <div
-                    style={{
-                        backgroundColor: 'rgba(30, 41, 59, 0.7)',
-                        border: '1px solid rgba(51, 65, 85, 0.5)',
-                        borderRadius: '16px',
-                        padding: '32px',
-                    }}
-                >
-                    {/* Logo */}
-                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-                        <div
-                            style={{
-                                padding: '16px',
-                                backgroundColor: 'rgba(51, 65, 85, 0.5)',
-                                borderRadius: '16px',
-                                border: '1px solid rgba(71, 85, 105, 0.3)',
-                            }}
-                        >
-                            <Zap style={{ height: '40px', width: '40px', color: '#3b82f6' }} />
-                        </div>
-                    </div>
+            {/* Card wrapper */}
+            <div
+                style={{
+                    width: '100%',
+                    maxWidth: '400px',
+                    background: '#ffffff',
+                    borderRadius: '16px',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.08), 0 32px 64px rgba(0,0,0,0.06)',
+                    overflow: 'hidden',
+                }}
+            >
+                {/* Top gradient accent */}
+                <div style={{
+                    height: '3px',
+                    background: 'linear-gradient(90deg, #2563eb 0%, #6366f1 100%)',
+                }} />
 
-                    {/* Header */}
-                    <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-                        <h1 style={{ fontSize: '20px', fontWeight: '600', color: '#ffffff', marginBottom: '4px' }}>
+                <div style={{ padding: '36px 32px 32px' }}>
+
+                    {/* ── Logo + title ── */}
+                    <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+                        <div style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '48px',
+                            height: '48px',
+                            borderRadius: '12px',
+                            background: 'linear-gradient(135deg, #eff6ff 0%, #eef2ff 100%)',
+                            border: '1px solid #c7d2fe',
+                            boxShadow: '0 2px 8px rgba(99,102,241,0.15)',
+                            marginBottom: '14px',
+                        }}>
+                            <Zap style={{ width: '22px', height: '22px', color: '#2563eb' }} strokeWidth={2.5} />
+                        </div>
+                        <h1 style={{
+                            margin: '0 0 6px',
+                            fontSize: '22px',
+                            fontWeight: '800',
+                            color: '#0f172a',
+                            letterSpacing: '-0.4px',
+                        }}>
                             Invoicely
                         </h1>
-                        <p style={{ color: '#94a3b8', fontSize: '14px' }}>Sign in to your account</p>
+                        <p style={{ margin: 0, fontSize: '13.5px', color: '#94a3b8', fontWeight: '400' }}>
+                            Sign in to your admin account
+                        </p>
                     </div>
 
-                    {/* Form */}
+                    {/* ── Form ── */}
                     <form onSubmit={handleSubmit(onSubmit)}>
-                        {/* Email Field */}
-                        <div style={{ marginBottom: '20px' }}>
-                            <label
-                                style={{
-                                    display: 'block',
-                                    fontSize: '14px',
-                                    fontWeight: '500',
-                                    color: '#cbd5e1',
-                                    marginBottom: '8px',
-                                }}
-                            >
+
+                        {/* Email field */}
+                        <div style={{ marginBottom: '16px' }}>
+                            <label style={{
+                                display: 'block',
+                                fontSize: '13px',
+                                fontWeight: '600',
+                                color: '#374151',
+                                marginBottom: '6px',
+                            }}>
                                 Email Address
                             </label>
                             <div style={{ position: 'relative' }}>
-                                <Mail
-                                    style={{
-                                        position: 'absolute',
-                                        left: '12px',
-                                        top: '50%',
-                                        transform: 'translateY(-50%)',
-                                        height: '20px',
-                                        width: '20px',
-                                        color: '#64748b',
-                                    }}
-                                />
+                                <Mail style={{
+                                    position: 'absolute',
+                                    left: '11px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    width: '15px',
+                                    height: '15px',
+                                    color: '#9ca3af',
+                                    pointerEvents: 'none',
+                                    zIndex: 1,
+                                }} />
                                 <input
                                     type="email"
                                     placeholder="you@example.com"
+                                    autoComplete="email"
+                                    {...register('email')}
                                     style={{
                                         width: '100%',
-                                        paddingLeft: '44px',
-                                        paddingRight: '16px',
-                                        paddingTop: '12px',
-                                        paddingBottom: '12px',
-                                        backgroundColor: 'rgba(51, 65, 85, 0.5)',
-                                        border: errors.email ? '1px solid #ef4444' : '1px solid #475569',
-                                        borderRadius: '12px',
-                                        color: '#ffffff',
+                                        height: '42px',
+                                        paddingLeft: '36px',
+                                        paddingRight: '12px',
                                         fontSize: '14px',
+                                        color: '#1e293b',
+                                        background: '#f8fafc',
+                                        border: errors.email ? '1.5px solid #ef4444' : '1.5px solid #e2e8f0',
+                                        borderRadius: '9px',
                                         outline: 'none',
+                                        boxSizing: 'border-box',
+                                        transition: 'border-color 0.15s, box-shadow 0.15s, background 0.15s',
                                     }}
-                                    {...register('email')}
+                                    onFocus={(e) => {
+                                        e.target.style.borderColor = '#2563eb';
+                                        e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.08)';
+                                        e.target.style.background = '#fff';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.target.style.borderColor = errors.email ? '#ef4444' : '#e2e8f0';
+                                        e.target.style.boxShadow = 'none';
+                                        e.target.style.background = '#f8fafc';
+                                    }}
                                 />
                             </div>
                             {errors.email && (
-                                <p style={{ marginTop: '6px', fontSize: '14px', color: '#f87171' }}>
+                                <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#ef4444' }}>
                                     {errors.email.message}
                                 </p>
                             )}
                         </div>
 
-                        {/* Password Field */}
-                        <div style={{ marginBottom: '24px' }}>
-                            <label
-                                style={{
-                                    display: 'block',
-                                    fontSize: '14px',
-                                    fontWeight: '500',
-                                    color: '#cbd5e1',
-                                    marginBottom: '8px',
-                                }}
-                            >
+                        {/* Password field */}
+                        <div style={{ marginBottom: '14px' }}>
+                            <label style={{
+                                display: 'block',
+                                fontSize: '13px',
+                                fontWeight: '600',
+                                color: '#374151',
+                                marginBottom: '6px',
+                            }}>
                                 Password
                             </label>
                             <div style={{ position: 'relative' }}>
-                                <Lock
-                                    style={{
-                                        position: 'absolute',
-                                        left: '12px',
-                                        top: '50%',
-                                        transform: 'translateY(-50%)',
-                                        height: '20px',
-                                        width: '20px',
-                                        color: '#64748b',
-                                    }}
-                                />
+                                <Lock style={{
+                                    position: 'absolute',
+                                    left: '11px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    width: '15px',
+                                    height: '15px',
+                                    color: '#9ca3af',
+                                    pointerEvents: 'none',
+                                    zIndex: 1,
+                                }} />
                                 <input
                                     type="password"
                                     placeholder="••••••••"
+                                    autoComplete="current-password"
+                                    {...register('password')}
                                     style={{
                                         width: '100%',
-                                        paddingLeft: '44px',
-                                        paddingRight: '16px',
-                                        paddingTop: '12px',
-                                        paddingBottom: '12px',
-                                        backgroundColor: 'rgba(51, 65, 85, 0.5)',
-                                        border: errors.password ? '1px solid #ef4444' : '1px solid #475569',
-                                        borderRadius: '12px',
-                                        color: '#ffffff',
+                                        height: '42px',
+                                        paddingLeft: '36px',
+                                        paddingRight: '12px',
                                         fontSize: '14px',
+                                        color: '#1e293b',
+                                        background: '#f8fafc',
+                                        border: errors.password ? '1.5px solid #ef4444' : '1.5px solid #e2e8f0',
+                                        borderRadius: '9px',
                                         outline: 'none',
+                                        boxSizing: 'border-box',
+                                        transition: 'border-color 0.15s, box-shadow 0.15s, background 0.15s',
                                     }}
-                                    {...register('password')}
+                                    onFocus={(e) => {
+                                        e.target.style.borderColor = '#2563eb';
+                                        e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.08)';
+                                        e.target.style.background = '#fff';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.target.style.borderColor = errors.password ? '#ef4444' : '#e2e8f0';
+                                        e.target.style.boxShadow = 'none';
+                                        e.target.style.background = '#f8fafc';
+                                    }}
                                 />
                             </div>
                             {errors.password && (
-                                <p style={{ marginTop: '6px', fontSize: '14px', color: '#f87171' }}>
+                                <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#ef4444' }}>
                                     {errors.password.message}
                                 </p>
                             )}
                         </div>
 
-                        {/* Submit Button */}
+                        {/* Helper + Forgot password */}
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            marginBottom: '20px',
+                        }}>
+                            <span style={{ fontSize: '12px', color: '#94a3b8' }}>Use your admin credentials</span>
+                            <a
+                                href="#"
+                                onClick={(e) => e.preventDefault()}
+                                style={{
+                                    fontSize: '12px',
+                                    fontWeight: '600',
+                                    color: '#2563eb',
+                                    textDecoration: 'none',
+                                    transition: 'color 0.15s',
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = '#1d4ed8';
+                                    e.currentTarget.style.textDecoration = 'underline';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = '#2563eb';
+                                    e.currentTarget.style.textDecoration = 'none';
+                                }}
+                            >
+                                Forgot password?
+                            </a>
+                        </div>
+
+                        {/* Sign In button — native button, no component clipping */}
                         <button
                             type="submit"
                             disabled={isLoading}
                             style={{
                                 width: '100%',
-                                padding: '12px',
-                                backgroundColor: '#3b82f6',
-                                color: '#ffffff',
-                                fontWeight: '500',
-                                borderRadius: '12px',
-                                border: 'none',
-                                cursor: isLoading ? 'not-allowed' : 'pointer',
-                                opacity: isLoading ? 0.6 : 1,
+                                height: '44px',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 gap: '8px',
+                                background: isLoading
+                                    ? '#bfdbfe'
+                                    : 'linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)',
+                                color: '#fff',
+                                fontWeight: '700',
                                 fontSize: '14px',
+                                letterSpacing: '0.02em',
+                                border: 'none',
+                                borderRadius: '9px',
+                                cursor: isLoading ? 'not-allowed' : 'pointer',
+                                boxShadow: isLoading ? 'none' : '0 2px 12px rgba(37,99,235,0.30)',
+                                transition: 'transform 0.15s, box-shadow 0.15s',
+                            }}
+                            onMouseEnter={(e) => {
+                                if (!isLoading) {
+                                    e.currentTarget.style.transform = 'translateY(-1px)';
+                                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(37,99,235,0.40)';
+                                }
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 2px 12px rgba(37,99,235,0.30)';
                             }}
                         >
                             {isLoading ? (
                                 <>
                                     <svg
-                                        style={{ animation: 'spin 1s linear infinite', height: '20px', width: '20px' }}
-                                        viewBox="0 0 24 24"
+                                        width="15" height="15" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" strokeWidth="2.5"
+                                        style={{ animation: 'lp-spin 0.75s linear infinite' }}
                                     >
-                                        <circle
-                                            style={{ opacity: 0.25 }}
-                                            cx="12"
-                                            cy="12"
-                                            r="10"
-                                            stroke="currentColor"
-                                            strokeWidth="4"
-                                            fill="none"
-                                        />
-                                        <path
-                                            style={{ opacity: 0.75 }}
-                                            fill="currentColor"
-                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                        />
+                                        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
                                     </svg>
-                                    Signing in...
+                                    Signing in…
                                 </>
                             ) : (
                                 'Sign In'
@@ -238,34 +309,30 @@ export function LoginPage() {
                         </button>
                     </form>
 
-                    {/* Forgot Password Link */}
-                    <div style={{ marginTop: '24px', textAlign: 'center' }}>
-                        <a
-                            href="#"
-                            style={{
-                                color: '#3b82f6',
-                                fontSize: '14px',
-                                textDecoration: 'none',
-                            }}
-                        >
-                            Forgot password?
-                        </a>
-                    </div>
-
-                    {/* Footer */}
-                    <div
-                        style={{
-                            marginTop: '32px',
-                            paddingTop: '24px',
-                            borderTop: '1px solid rgba(51, 65, 85, 0.5)',
-                        }}
-                    >
-                        <p style={{ textAlign: 'center', color: '#64748b', fontSize: '12px' }}>
+                    {/* ── Footer ── */}
+                    <div style={{
+                        marginTop: '24px',
+                        paddingTop: '18px',
+                        borderTop: '1px solid #f1f5f9',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '5px',
+                    }}>
+                        <ShieldCheck style={{ width: '12px', height: '12px', color: '#cbd5e1', flexShrink: 0 }} />
+                        <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8', lineHeight: 1.5 }}>
                             Secure admin access · IP restricted · All actions logged
                         </p>
                     </div>
                 </div>
             </div>
+
+            <style>{`
+                @keyframes lp-spin {
+                    from { transform: rotate(0deg); }
+                    to   { transform: rotate(360deg); }
+                }
+            `}</style>
         </div>
     );
 }

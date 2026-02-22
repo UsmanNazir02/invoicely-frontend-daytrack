@@ -1,33 +1,61 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
-    Plus,
-    Eye,
-    Trash2,
-    FileText,
-    Calendar,
-    User,
-    DollarSign,
+    Plus, Eye, Pencil, Trash2, FileText,
+    Calendar, User, DollarSign, CheckCircle, Clock, Send,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { Card, CardHeader, CardContent, Button, Badge, Table } from '../../components';
 import { quoteService } from '../../services';
 import type { Quote } from '../../types';
 import { QuoteStatus } from '../../types';
 
-const statusColors: Record<string, 'default' | 'info' | 'success' | 'warning' | 'danger'> = {
-    [QuoteStatus.DRAFT]: 'default',
-    [QuoteStatus.SENT]: 'info',
-    [QuoteStatus.ACCEPTED]: 'success',
-    [QuoteStatus.REJECTED]: 'danger',
+/* ── status config ── */
+const statusConfig: Record<string, { label: string; bg: string; color: string; border: string }> = {
+    [QuoteStatus.DRAFT]: { label: 'Draft', bg: '#f8fafc', color: '#64748b', border: '#e2e8f0' },
+    [QuoteStatus.SENT]: { label: 'Sent', bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
+    [QuoteStatus.ACCEPTED]: { label: 'Accepted', bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' },
+    [QuoteStatus.REJECTED]: { label: 'Rejected', bg: '#fff1f2', color: '#dc2626', border: '#fecaca' },
 };
 
-const statusLabels: Record<string, string> = {
-    [QuoteStatus.DRAFT]: 'Draft',
-    [QuoteStatus.SENT]: 'Sent',
-    [QuoteStatus.ACCEPTED]: 'Accepted',
-    [QuoteStatus.REJECTED]: 'Rejected',
-};
+function StatusBadge({ status }: { status: string }) {
+    const cfg = statusConfig[status] ?? statusConfig[QuoteStatus.DRAFT];
+    return (
+        <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: '5px',
+            padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '700',
+            background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`,
+            whiteSpace: 'nowrap',
+        }}>
+            {cfg.label}
+        </span>
+    );
+}
+
+function IconBtn({ onClick, title, danger, children }: {
+    onClick?: () => void; title?: string; danger?: boolean; children: React.ReactNode;
+}) {
+    return (
+        <button
+            onClick={onClick}
+            title={title}
+            style={{
+                width: '34px', height: '34px', borderRadius: '8px', border: '1px solid #e2e8f0',
+                background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: danger ? '#dc2626' : '#374151', transition: 'background 0.15s, border-color 0.15s',
+            }}
+            onMouseEnter={e => {
+                e.currentTarget.style.background = danger ? '#fff1f2' : '#f8fafc';
+                e.currentTarget.style.borderColor = danger ? '#fecaca' : '#cbd5e1';
+            }}
+            onMouseLeave={e => {
+                e.currentTarget.style.background = '#fff';
+                e.currentTarget.style.borderColor = '#e2e8f0';
+            }}
+        >
+            {children}
+        </button>
+    );
+}
 
 export function QuotesPage() {
     const queryClient = useQueryClient();
@@ -35,197 +63,203 @@ export function QuotesPage() {
     const { data, isLoading } = useQuery({
         queryKey: ['quotes'],
         queryFn: () => quoteService.getAll(),
+        refetchOnMount: 'always',
     });
 
     const deleteMutation = useMutation({
         mutationFn: (id: string) => quoteService.delete(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['quotes'] });
-            toast.success('Quote deleted successfully');
-        },
+        onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['quotes'] }); toast.success('Quote deleted'); },
         onError: () => toast.error('Failed to delete quote'),
     });
 
-    const handleDelete = (id: string) => {
-        if (confirm('Are you sure you want to delete this quote?')) {
-            deleteMutation.mutate(id);
-        }
-    };
+    const quotes: Quote[] = data?.items || (Array.isArray(data) ? data : []);
 
-    const columns = [
-        {
-            key: 'customerName',
-            header: 'Customer',
-            render: (quote: Quote) => (
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <User className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <div>
-                        <p className="font-medium text-gray-900">{quote.customerName}</p>
-                        {quote.customerPhone && (
-                            <p className="text-sm text-gray-500">{quote.customerPhone}</p>
-                        )}
-                    </div>
-                </div>
-            ),
-        },
-        {
-            key: 'items',
-            header: 'Items',
-            render: (quote: Quote) => (
-                <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-gray-400" />
-                    <span>{quote.items?.length || 0} items</span>
-                </div>
-            ),
-        },
-        {
-            key: 'finalAmount',
-            header: 'Amount',
-            render: (quote: Quote) => (
-                <div className="flex items-center gap-2">
-                    <DollarSign className="h-4 w-4 text-gray-400" />
-                    <span className="font-semibold text-gray-900">
-                        Rs. {Number(quote.finalAmount).toLocaleString()}
-                    </span>
-                </div>
-            ),
-        },
-        {
-            key: 'status',
-            header: 'Status',
-            render: (quote: Quote) => (
-                <Badge variant={statusColors[quote.status]}>
-                    {statusLabels[quote.status]}
-                </Badge>
-            ),
-        },
-        {
-            key: 'createdAt',
-            header: 'Created',
-            render: (quote: Quote) => (
-                <div className="flex items-center gap-2 text-gray-500">
-                    <Calendar className="h-4 w-4" />
-                    <span>{new Date(quote.createdAt).toLocaleDateString()}</span>
-                </div>
-            ),
-        },
-        {
-            key: 'actions',
-            header: 'Actions',
-            render: (quote: Quote) => (
-                <div className="flex items-center gap-2">
-                    <Link to={`/quotes/${quote.id}`}>
-                        <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
-                        </Button>
-                    </Link>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(quote.id)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
-                </div>
-            ),
-        },
+    const totalValue = quotes.reduce((s, q) => s + Number(q.finalAmount), 0);
+    const sentCount = quotes.filter(q => q.status === QuoteStatus.SENT).length;
+    const acceptedCount = quotes.filter(q => q.status === QuoteStatus.ACCEPTED).length;
+
+    const stats = [
+        { label: 'Total Quotes', value: quotes.length, icon: <FileText style={{ width: '18px', height: '18px', color: '#2563eb' }} />, bg: '#eff6ff', border: '#bfdbfe' },
+        { label: 'Sent', value: sentCount, icon: <Send style={{ width: '18px', height: '18px', color: '#7c3aed' }} />, bg: '#faf5ff', border: '#e9d5ff' },
+        { label: 'Accepted', value: acceptedCount, icon: <CheckCircle style={{ width: '18px', height: '18px', color: '#16a34a' }} />, bg: '#f0fdf4', border: '#bbf7d0' },
+        { label: 'Total Value', value: `Rs. ${totalValue.toLocaleString()}`, icon: <DollarSign style={{ width: '18px', height: '18px', color: '#ca8a04' }} />, bg: '#fefce8', border: '#fef08a', wide: true },
     ];
 
-    const quotes = data?.items || (Array.isArray(data) ? data : []);
-
     return (
-        <div className="space-y-6 animate-fadeIn">
-            <div className="flex items-center justify-between">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">My Quotes</h1>
-                    <p className="text-gray-500 mt-1">View and manage your quotes</p>
+                    <h1 style={{ margin: '0 0 4px', fontSize: '22px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.3px' }}>
+                        Quotes
+                    </h1>
+                    <p style={{ margin: 0, fontSize: '13.5px', color: '#64748b' }}>View and manage all your quotes</p>
                 </div>
-                <Link to="/quote-builder">
-                    <Button>
-                        <Plus className="h-4 w-4 mr-2" />
+                <Link to="/quote-builder" style={{ textDecoration: 'none', flexShrink: 0 }}>
+                    <button
+                        style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '7px',
+                            height: '40px', padding: '0 18px',
+                            background: 'linear-gradient(135deg,#2563eb,#4f46e5)',
+                            color: '#fff', fontWeight: '700', fontSize: '13.5px',
+                            border: 'none', borderRadius: '9px', cursor: 'pointer',
+                            boxShadow: '0 2px 10px rgba(37,99,235,0.28)', transition: 'transform 0.15s, box-shadow 0.15s',
+                            whiteSpace: 'nowrap',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 18px rgba(37,99,235,0.38)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 10px rgba(37,99,235,0.28)'; }}
+                    >
+                        <Plus style={{ width: '15px', height: '15px' }} />
                         New Quote
-                    </Button>
+                    </button>
                 </Link>
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card>
-                    <CardContent className="py-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-gray-100 rounded-lg">
-                                <FileText className="h-5 w-5 text-gray-600" />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-bold text-gray-900">{quotes.length}</p>
-                                <p className="text-sm text-gray-500">Total Quotes</p>
-                            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: '14px' }}>
+                {stats.map(s => (
+                    <div key={s.label} style={{
+                        background: '#fff', border: '1px solid #f1f5f9', borderRadius: '14px',
+                        padding: '18px 20px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                        display: 'flex', alignItems: 'center', gap: '14px',
+                    }}>
+                        <div style={{
+                            width: '42px', height: '42px', borderRadius: '11px', flexShrink: 0,
+                            background: s.bg, border: `1px solid ${s.border}`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                            {s.icon}
                         </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="py-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-blue-100 rounded-lg">
-                                <FileText className="h-5 w-5 text-blue-600" />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    {quotes.filter((q: Quote) => q.status === QuoteStatus.SENT).length}
-                                </p>
-                                <p className="text-sm text-gray-500">Sent</p>
-                            </div>
+                        <div style={{ minWidth: 0 }}>
+                            <p style={{ margin: '0 0 2px', fontSize: typeof s.value === 'string' ? '15px' : '24px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {s.value}
+                            </p>
+                            <p style={{ margin: 0, fontSize: '12px', color: '#64748b', fontWeight: '500' }}>{s.label}</p>
                         </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="py-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-green-100 rounded-lg">
-                                <FileText className="h-5 w-5 text-green-600" />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    {quotes.filter((q: Quote) => q.status === QuoteStatus.ACCEPTED).length}
-                                </p>
-                                <p className="text-sm text-gray-500">Accepted</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="py-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-yellow-100 rounded-lg">
-                                <DollarSign className="h-5 w-5 text-yellow-600" />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    Rs. {quotes.reduce((sum: number, q: Quote) => sum + Number(q.finalAmount), 0).toLocaleString()}
-                                </p>
-                                <p className="text-sm text-gray-500">Total Value</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                    </div>
+                ))}
             </div>
 
-            <Card>
-                <CardHeader>
-                    <h2 className="text-lg font-semibold text-gray-900">All Quotes</h2>
-                </CardHeader>
-                <CardContent className="p-0">
-                    <Table
-                        columns={columns}
-                        data={quotes}
-                        isLoading={isLoading}
-                        emptyMessage="No quotes yet. Create your first quote!"
-                    />
-                </CardContent>
-            </Card>
+            {/* Table card */}
+            <div style={{ background: '#fff', border: '1px solid #f1f5f9', borderRadius: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+                <div style={{ padding: '16px 20px', borderBottom: '1px solid #f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>All Quotes</span>
+                    <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '500' }}>{quotes.length} records</span>
+                </div>
+
+                {isLoading ? (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px', color: '#94a3b8', gap: '10px' }}>
+                        <Clock style={{ width: '18px', height: '18px' }} />
+                        <span style={{ fontSize: '14px' }}>Loading quotes…</span>
+                    </div>
+                ) : quotes.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                        <FileText style={{ width: '48px', height: '48px', color: '#e2e8f0', margin: '0 auto 12px' }} />
+                        <p style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: '700', color: '#374151' }}>No quotes yet</p>
+                        <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>Create your first quote to get started</p>
+                    </div>
+                ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '640px' }}>
+                            <thead>
+                                <tr style={{ background: '#f8fafc' }}>
+                                    {['Customer', 'Items', 'Amount', 'Status', 'Created', 'Actions'].map(h => (
+                                        <th key={h} style={{
+                                            padding: '10px 18px', textAlign: 'left',
+                                            fontSize: '11.5px', fontWeight: '700', color: '#64748b',
+                                            letterSpacing: '0.06em', textTransform: 'uppercase',
+                                            borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap',
+                                        }}>{h}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {quotes.map((quote, idx) => (
+                                    <tr
+                                        key={quote.id}
+                                        style={{ borderBottom: idx < quotes.length - 1 ? '1px solid #f8fafc' : 'none', transition: 'background 0.12s' }}
+                                        onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#fafbff'; }}
+                                        onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'; }}
+                                    >
+                                        {/* Customer */}
+                                        <td style={{ padding: '14px 18px', verticalAlign: 'middle' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <div style={{
+                                                    width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
+                                                    background: 'linear-gradient(135deg,#eff6ff,#eef2ff)',
+                                                    border: '1px solid #c7d2fe',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                }}>
+                                                    <User style={{ width: '16px', height: '16px', color: '#2563eb' }} />
+                                                </div>
+                                                <div style={{ minWidth: 0 }}>
+                                                    <p style={{ margin: '0 0 1px', fontSize: '13.5px', fontWeight: '700', color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        {quote.customerName}
+                                                    </p>
+                                                    {quote.customerPhone && (
+                                                        <p style={{ margin: 0, fontSize: '12px', color: '#94a3b8' }}>{quote.customerPhone}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        {/* Items */}
+                                        <td style={{ padding: '14px 18px', verticalAlign: 'middle' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <FileText style={{ width: '14px', height: '14px', color: '#94a3b8' }} />
+                                                <span style={{ fontSize: '13.5px', color: '#374151', fontWeight: '600' }}>
+                                                    {quote.items?.length || 0} items
+                                                </span>
+                                            </div>
+                                        </td>
+                                        {/* Amount */}
+                                        <td style={{ padding: '14px 18px', verticalAlign: 'middle' }}>
+                                            <span style={{ fontSize: '13.5px', fontWeight: '800', color: '#0f172a', whiteSpace: 'nowrap' }}>
+                                                Rs. {Number(quote.finalAmount).toLocaleString()}
+                                            </span>
+                                        </td>
+                                        {/* Status */}
+                                        <td style={{ padding: '14px 18px', verticalAlign: 'middle' }}>
+                                            <StatusBadge status={quote.status} />
+                                        </td>
+                                        {/* Created */}
+                                        <td style={{ padding: '14px 18px', verticalAlign: 'middle' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
+                                                <Calendar style={{ width: '13px', height: '13px', flexShrink: 0 }} />
+                                                <span style={{ fontSize: '13px', whiteSpace: 'nowrap' }}>
+                                                    {new Date(quote.createdAt).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        {/* Actions */}
+                                        <td style={{ padding: '14px 18px', verticalAlign: 'middle' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                {quote.status === QuoteStatus.DRAFT && (
+                                                    <Link to={`/quote-builder?draft=${quote.id}`} style={{ textDecoration: 'none' }}>
+                                                        <IconBtn title="Continue editing">
+                                                            <Pencil style={{ width: '14px', height: '14px' }} />
+                                                        </IconBtn>
+                                                    </Link>
+                                                )}
+                                                <Link to={`/quotes/${quote.id}`} style={{ textDecoration: 'none' }}>
+                                                    <IconBtn title="View quote">
+                                                        <Eye style={{ width: '14px', height: '14px' }} />
+                                                    </IconBtn>
+                                                </Link>
+                                                <IconBtn title="Delete" danger onClick={() => {
+                                                    if (confirm('Delete this quote?')) deleteMutation.mutate(quote.id);
+                                                }}>
+                                                    <Trash2 style={{ width: '14px', height: '14px' }} />
+                                                </IconBtn>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

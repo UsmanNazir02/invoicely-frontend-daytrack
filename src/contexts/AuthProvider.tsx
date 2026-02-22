@@ -1,39 +1,44 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import axios from 'axios';
 import type { User } from '../types';
 import { authService } from '../services';
-
-interface AuthContextType {
-    user: User | null;
-    isLoading: boolean;
-    isAuthenticated: boolean;
-    login: (email: string, password: string) => Promise<void>;
-    logout: () => Promise<void>;
-    refreshUser: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+import { AuthContext } from './auth-context';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<User | null>(() => {
+        try {
+            const stored = localStorage.getItem('authUser');
+            return stored ? (JSON.parse(stored) as User) : null;
+        } catch {
+            return null;
+        }
+    });
     const [isLoading, setIsLoading] = useState(true);
 
     const refreshUser = async () => {
         try {
             const userData = await authService.getProfile();
             setUser(userData);
-        } catch {
-            setUser(null);
+            localStorage.setItem('authUser', JSON.stringify(userData));
+        } catch (err) {
+            if (axios.isAxiosError(err) && err.response?.status === 401) {
+                setUser(null);
+                localStorage.removeItem('authUser');
+            }
         }
     };
 
     useEffect(() => {
-        // Check if user is already logged in (cookie exists)
         const checkAuth = async () => {
             try {
                 const userData = await authService.getProfile();
                 setUser(userData);
-            } catch {
-                setUser(null);
+                localStorage.setItem('authUser', JSON.stringify(userData));
+            } catch (err) {
+                if (axios.isAxiosError(err) && err.response?.status === 401) {
+                    setUser(null);
+                    localStorage.removeItem('authUser');
+                }
             } finally {
                 setIsLoading(false);
             }
@@ -45,11 +50,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const login = async (email: string, password: string) => {
         const response = await authService.login({ email, password });
         setUser(response.user);
+        localStorage.setItem('authUser', JSON.stringify(response.user));
     };
 
     const logout = async () => {
         await authService.logout();
         setUser(null);
+        localStorage.removeItem('authUser');
     };
 
     return (
@@ -66,12 +73,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             {children}
         </AuthContext.Provider>
     );
-}
-
-export function useAuth() {
-    const context = useContext(AuthContext);
-    if (context === undefined) {
-        throw new Error('useAuth must be used within an AuthProvider');
-    }
-    return context;
 }

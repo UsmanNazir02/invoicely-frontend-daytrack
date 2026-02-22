@@ -46,13 +46,13 @@ export function Table<T extends { id: string }>({
 
     return (
         <div className="overflow-x-auto">
-            <table className="min-w-full">
+            <table className="min-w-full w-full">
                 <thead>
                     <tr className="border-b border-gray-100">
                         {columns.map((column) => (
                             <th
                                 key={column.key}
-                                className={`px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider ${column.className || ''}`}
+                                className={`px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap ${column.className || ''}`}
                             >
                                 {column.header}
                             </th>
@@ -69,7 +69,7 @@ export function Table<T extends { id: string }>({
                             {columns.map((column) => (
                                 <td
                                     key={column.key}
-                                    className={`px-6 py-4 whitespace-nowrap text-sm text-gray-700 ${column.className || ''}`}
+                                    className={`px-6 py-3 align-middle text-sm text-gray-700 whitespace-normal break-words ${column.className || ''}`}
                                 >
                                     {column.render
                                         ? column.render(item)
