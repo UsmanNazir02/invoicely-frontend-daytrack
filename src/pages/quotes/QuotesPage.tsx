@@ -1,17 +1,21 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
     Plus, Eye, Pencil, Trash2, FileText,
-    Calendar, User, DollarSign, CheckCircle, Clock, Send,
+    Calendar, User, DollarSign, Clock, Send, Users, FilePlus, X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { quoteService } from '../../services';
+import { quoteService, userService } from '../../services';
+import { useAuth } from '../../contexts';
+import { Pagination } from '../../components/ui';
 import type { Quote } from '../../types';
-import { QuoteStatus } from '../../types';
+import { QuoteStatus, UserRole } from '../../types';
 
 /* ── status config ── */
 const statusConfig: Record<string, { label: string; bg: string; color: string; border: string }> = {
     [QuoteStatus.DRAFT]: { label: 'Draft', bg: '#f8fafc', color: '#64748b', border: '#e2e8f0' },
+    [QuoteStatus.CREATED]: { label: 'Created', bg: '#fdf4ff', color: '#c026d3', border: '#fce7f3' },
     [QuoteStatus.SENT]: { label: 'Sent', bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
     [QuoteStatus.ACCEPTED]: { label: 'Accepted', bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' },
     [QuoteStatus.REJECTED]: { label: 'Rejected', bg: '#fff1f2', color: '#dc2626', border: '#fecaca' },
@@ -59,10 +63,22 @@ function IconBtn({ onClick, title, danger, children }: {
 
 export function QuotesPage() {
     const queryClient = useQueryClient();
+    const { user } = useAuth();
+    const [selectedAgentId, setSelectedAgentId] = useState<string>('');
+    const [page, setPage] = useState(1);
+    const [quoteToDelete, setQuoteToDelete] = useState<string | null>(null);
+
+    const isAdmin = user?.role === UserRole.ADMIN;
+
+    const { data: agentsData } = useQuery({
+        queryKey: ['sales-agents'],
+        queryFn: () => userService.getSalesAgents({ limit: 100 }),
+        enabled: isAdmin,
+    });
 
     const { data, isLoading } = useQuery({
-        queryKey: ['quotes'],
-        queryFn: () => quoteService.getAll(),
+        queryKey: ['quotes', selectedAgentId, page],
+        queryFn: () => quoteService.getAll({ salesUserId: selectedAgentId || undefined, page, limit: 10 }),
         refetchOnMount: 'always',
     });
 
@@ -72,16 +88,22 @@ export function QuotesPage() {
         onError: () => toast.error('Failed to delete quote'),
     });
 
-    const quotes: Quote[] = data?.items || (Array.isArray(data) ? data : []);
+    // @ts-expect-error Backend returns data.data instead of data.items for this endpoint
+    const quotes: Quote[] = data?.data || data?.items || (Array.isArray(data) ? data : []);
+
+    // @ts-expect-error Extract pagination details from flexible backend response
+    const totalRecords = data?.totalCount ?? data?.total ?? quotes.length;
+    const limit = (data as any)?.limit ?? 10;
+    const totalPages = Math.ceil(totalRecords / limit);
 
     const totalValue = quotes.reduce((s, q) => s + Number(q.finalAmount), 0);
     const sentCount = quotes.filter(q => q.status === QuoteStatus.SENT).length;
-    const acceptedCount = quotes.filter(q => q.status === QuoteStatus.ACCEPTED).length;
+    const createdCount = quotes.filter(q => q.status === QuoteStatus.CREATED).length;
 
     const stats = [
         { label: 'Total Quotes', value: quotes.length, icon: <FileText style={{ width: '18px', height: '18px', color: '#2563eb' }} />, bg: '#eff6ff', border: '#bfdbfe' },
         { label: 'Sent', value: sentCount, icon: <Send style={{ width: '18px', height: '18px', color: '#7c3aed' }} />, bg: '#faf5ff', border: '#e9d5ff' },
-        { label: 'Accepted', value: acceptedCount, icon: <CheckCircle style={{ width: '18px', height: '18px', color: '#16a34a' }} />, bg: '#f0fdf4', border: '#bbf7d0' },
+        { label: 'Created', value: createdCount, icon: <FilePlus style={{ width: '18px', height: '18px', color: '#c026d3' }} />, bg: '#fdf4ff', border: '#fce7f3' },
         { label: 'Total Value', value: `Rs. ${totalValue.toLocaleString()}`, icon: <DollarSign style={{ width: '18px', height: '18px', color: '#ca8a04' }} />, bg: '#fefce8', border: '#fef08a', wide: true },
     ];
 
@@ -117,35 +139,73 @@ export function QuotesPage() {
             </div>
 
             {/* Stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: '14px' }}>
-                {stats.map(s => (
-                    <div key={s.label} style={{
-                        background: '#fff', border: '1px solid #f1f5f9', borderRadius: '14px',
-                        padding: '18px 20px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                        display: 'flex', alignItems: 'center', gap: '14px',
-                    }}>
-                        <div style={{
-                            width: '42px', height: '42px', borderRadius: '11px', flexShrink: 0,
-                            background: s.bg, border: `1px solid ${s.border}`,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}>
-                            {s.icon}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {isAdmin && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #bfdbfe' }}>
+                            <Users style={{ width: '15px', height: '15px', color: '#2563eb' }} />
                         </div>
-                        <div style={{ minWidth: 0 }}>
-                            <p style={{ margin: '0 0 2px', fontSize: typeof s.value === 'string' ? '15px' : '24px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {s.value}
-                            </p>
-                            <p style={{ margin: 0, fontSize: '12px', color: '#64748b', fontWeight: '500' }}>{s.label}</p>
-                        </div>
+                        <span style={{ fontSize: '13.5px', fontWeight: '600', color: '#475569' }}>Filter by Agent:</span>
+                        <select
+                            value={selectedAgentId}
+                            onChange={e => {
+                                setSelectedAgentId(e.target.value);
+                                setPage(1); // Reset page on filter change
+                            }}
+                            style={{
+                                height: '34px', padding: '0 12px',
+                                fontSize: '13px', color: '#0f172a', fontWeight: '500',
+                                background: '#fff', border: '1.5px solid #e2e8f0',
+                                borderRadius: '8px', outline: 'none', cursor: 'pointer',
+                                minWidth: '200px', transition: 'border-color 0.15s, box-shadow 0.15s'
+                            }}
+                            onFocus={e => { e.target.style.borderColor = '#2563eb'; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.08)'; }}
+                            onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none'; }}
+                        >
+                            <option value="">All Sales Agents</option>
+                            {/* @ts-expect-error Backend returns data.data instead of data.items for this endpoint */}
+                            {(agentsData?.data || agentsData?.items)?.map(agent => (
+                                <option key={agent.id} value={agent.id}>{agent.fullName || agent.email}</option>
+                            ))}
+                        </select>
                     </div>
-                ))}
+                )}
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: '14px' }}>
+                    {stats.map(s => (
+                        <div key={s.label} style={{
+                            background: '#fff', border: '1px solid #f1f5f9', borderRadius: '14px',
+                            padding: '18px 20px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                            display: 'flex', alignItems: 'center', gap: '14px',
+                        }}>
+                            <div style={{
+                                width: '42px', height: '42px', borderRadius: '11px', flexShrink: 0,
+                                background: s.bg, border: `1px solid ${s.border}`,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}>
+                                {s.icon}
+                            </div>
+                            <div style={{ minWidth: 0 }}>
+                                <p style={{ margin: '0 0 2px', fontSize: typeof s.value === 'string' ? '15px' : '24px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {s.value}
+                                </p>
+                                <p style={{ margin: 0, fontSize: '12px', color: '#64748b', fontWeight: '500' }}>{s.label}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
 
             {/* Table card */}
             <div style={{ background: '#fff', border: '1px solid #f1f5f9', borderRadius: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
                 <div style={{ padding: '16px 20px', borderBottom: '1px solid #f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>All Quotes</span>
-                    <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '500' }}>{quotes.length} records</span>
+                    <Pagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        onPageChange={setPage}
+                        totalRecords={totalRecords}
+                    />
                 </div>
 
                 {isLoading ? (
@@ -164,7 +224,7 @@ export function QuotesPage() {
                         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '640px' }}>
                             <thead>
                                 <tr style={{ background: '#f8fafc' }}>
-                                    {['Customer', 'Items', 'Amount', 'Status', 'Created', 'Actions'].map(h => (
+                                    {['Customer', isAdmin ? 'Sales Agent' : null, 'Items', 'Amount', 'Status', 'Created', 'Actions'].filter(Boolean).map(h => (
                                         <th key={h} style={{
                                             padding: '10px 18px', textAlign: 'left',
                                             fontSize: '11.5px', fontWeight: '700', color: '#64748b',
@@ -203,6 +263,25 @@ export function QuotesPage() {
                                                 </div>
                                             </div>
                                         </td>
+                                        {/* Sales Agent (Admin Only) */}
+                                        {isAdmin && (
+                                            <td style={{ padding: '14px 18px', verticalAlign: 'middle' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <div style={{
+                                                        width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
+                                                        background: 'linear-gradient(135deg,#f1f5f9,#e2e8f0)',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    }}>
+                                                        <span style={{ fontSize: '11px', fontWeight: '800', color: '#475569' }}>
+                                                            {quote.createdBy?.fullName?.charAt(0)?.toUpperCase() || 'A'}
+                                                        </span>
+                                                    </div>
+                                                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>
+                                                        {quote.createdBy?.fullName || quote.createdBy?.email || 'Unknown'}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                        )}
                                         {/* Items */}
                                         <td style={{ padding: '14px 18px', verticalAlign: 'middle' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -234,21 +313,17 @@ export function QuotesPage() {
                                         {/* Actions */}
                                         <td style={{ padding: '14px 18px', verticalAlign: 'middle' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                {quote.status === QuoteStatus.DRAFT && (
-                                                    <Link to={`/quote-builder?draft=${quote.id}`} style={{ textDecoration: 'none' }}>
-                                                        <IconBtn title="Continue editing">
-                                                            <Pencil style={{ width: '14px', height: '14px' }} />
-                                                        </IconBtn>
-                                                    </Link>
-                                                )}
+                                                <Link to={`/quote-builder?draft=${quote.id}`} style={{ textDecoration: 'none' }}>
+                                                    <IconBtn title="Edit quote">
+                                                        <Pencil style={{ width: '14px', height: '14px' }} />
+                                                    </IconBtn>
+                                                </Link>
                                                 <Link to={`/quotes/${quote.id}`} style={{ textDecoration: 'none' }}>
                                                     <IconBtn title="View quote">
                                                         <Eye style={{ width: '14px', height: '14px' }} />
                                                     </IconBtn>
                                                 </Link>
-                                                <IconBtn title="Delete" danger onClick={() => {
-                                                    if (confirm('Delete this quote?')) deleteMutation.mutate(quote.id);
-                                                }}>
+                                                <IconBtn title="Delete" danger onClick={() => setQuoteToDelete(quote.id)}>
                                                     <Trash2 style={{ width: '14px', height: '14px' }} />
                                                 </IconBtn>
                                             </div>
@@ -260,6 +335,79 @@ export function QuotesPage() {
                     </div>
                 )}
             </div>
+
+            {/* Delete Confirmation Modal */}
+            {quoteToDelete && (
+                <div
+                    style={{
+                        position: 'fixed', inset: 0, zIndex: 200,
+                        background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(4px)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px',
+                    }}
+                    onClick={e => { if (e.target === e.currentTarget) setQuoteToDelete(null); }}
+                >
+                    <div style={{
+                        width: '100%', maxWidth: '400px',
+                        background: '#fff', borderRadius: '16px',
+                        boxShadow: '0 8px 40px rgba(0,0,0,0.14)',
+                        overflow: 'hidden',
+                        animation: 'modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                    }}>
+                        <div style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            padding: '18px 22px 14px',
+                            borderBottom: '1px solid #f1f5f9',
+                        }}>
+                            <h2 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.2px' }}>
+                                Delete Quote
+                            </h2>
+                            <button onClick={() => setQuoteToDelete(null)} style={{
+                                width: '30px', height: '30px', borderRadius: '8px', border: '1px solid #e2e8f0',
+                                background: '#f8fafc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b',
+                            }}
+                                onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; }}
+                            >
+                                <X style={{ width: '14px', height: '14px' }} />
+                            </button>
+                        </div>
+                        <div style={{ padding: '20px 22px 22px' }}>
+                            <p style={{ margin: '0 0 24px', fontSize: '13.5px', color: '#475569', lineHeight: '1.5' }}>
+                                Are you sure you want to delete this quote? This action cannot be undone.
+                            </p>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                                <button onClick={() => setQuoteToDelete(null)} style={{
+                                    height: '38px', padding: '0 18px', borderRadius: '9px', border: '1.5px solid #e2e8f0',
+                                    background: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: '#374151', transition: 'background 0.15s',
+                                }}
+                                    onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        deleteMutation.mutate(quoteToDelete);
+                                        setQuoteToDelete(null);
+                                    }}
+                                    disabled={deleteMutation.isPending}
+                                    style={{
+                                        height: '38px', padding: '0 20px', borderRadius: '9px', border: 'none',
+                                        background: '#ef4444', color: '#fff',
+                                        fontWeight: '700', fontSize: '13px', cursor: 'pointer',
+                                        boxShadow: '0 2px 10px rgba(239, 68, 68, 0.28)', transition: 'transform 0.15s, box-shadow 0.15s',
+                                        opacity: deleteMutation.isPending ? 0.7 : 1,
+                                    }}
+                                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(239, 68, 68, 0.38)'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 10px rgba(239, 68, 68, 0.28)'; }}
+                                >
+                                    {deleteMutation.isPending ? 'Deleting...' : 'Delete Quote'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

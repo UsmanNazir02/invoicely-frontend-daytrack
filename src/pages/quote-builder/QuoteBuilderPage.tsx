@@ -145,7 +145,11 @@ export function QuoteBuilderPage() {
             queryClient.invalidateQueries({ queryKey: ['quotes', quote.id] });
             navigate(`/quotes/${quote.id}`);
         },
-        onError: () => toast.error(editingQuoteId ? 'Failed to update' : 'Failed to create'),
+        onError: (error: any) => {
+            const errMsg = error.response?.data?.message;
+            const text = Array.isArray(errMsg) ? errMsg[0] : errMsg;
+            toast.error(text || (editingQuoteId ? 'Failed to update quote' : 'Failed to create quote'));
+        },
     });
 
     const { subtotal, discountAmount, total } = useMemo(() => {
@@ -562,7 +566,7 @@ export function QuoteBuilderPage() {
                             Save Draft
                         </button>
                         <button
-                            onClick={() => handleSubmit('sent')}
+                            onClick={() => handleSubmit('created')}
                             disabled={saveQuoteMutation.isPending}
                             style={{
                                 height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',

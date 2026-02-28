@@ -7,12 +7,11 @@ import {
     Zap,
     Building,
     LogOut,
-    Menu,
-    X,
     Tag,
     FileText,
     ChevronLeft,
     ChevronRight,
+    Users,
 } from 'lucide-react';
 import { useAuth } from '../../contexts';
 import { UserRole } from '../../types';
@@ -21,6 +20,7 @@ const adminNavigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Quote Builder', href: '/quote-builder', icon: FileText },
     { name: 'Quotes', href: '/quotes', icon: FileText },
+    { name: 'Sales Agents', href: '/sales-agents', icon: Users },
     { name: 'Brands', href: '/brands', icon: Tag },
     { name: 'Solar Panels', href: '/solar-panels', icon: Sun },
     { name: 'Inverters', href: '/inverters', icon: Zap },
@@ -158,7 +158,6 @@ export function Sidebar({ children }: SidebarProps) {
                     )}
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-                        {/* Desktop collapse toggle */}
                         <button
                             onClick={() => setIsCollapsed(v => !v)}
                             className="hidden md:flex"
@@ -175,18 +174,6 @@ export function Sidebar({ children }: SidebarProps) {
                                 ? <ChevronRight style={{ width: '14px', height: '14px' }} />
                                 : <ChevronLeft style={{ width: '14px', height: '14px' }} />
                             }
-                        </button>
-                        {/* Mobile close */}
-                        <button
-                            onClick={() => setMobileOpen(false)}
-                            className="md:hidden"
-                            style={{
-                                width: '28px', height: '28px', borderRadius: '7px', border: 'none',
-                                background: 'transparent', cursor: 'pointer', color: '#64748b',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            }}
-                        >
-                            <X style={{ width: '16px', height: '16px' }} />
                         </button>
                     </div>
                 </div>
@@ -357,19 +344,6 @@ export function Sidebar({ children }: SidebarProps) {
                     boxShadow: '0 1px 0 #f1f5f9',
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                        {/* Mobile hamburger */}
-                        <button
-                            onClick={() => setMobileOpen(true)}
-                            className="md:hidden"
-                            style={{
-                                width: '36px', height: '36px', borderRadius: '9px',
-                                border: '1px solid #e2e8f0', background: '#f8fafc',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                cursor: 'pointer', color: '#374151',
-                            }}
-                        >
-                            <Menu style={{ width: '18px', height: '18px' }} />
-                        </button>
                         <div>
                             <h1 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>
                                 {getCurrentTitle()}

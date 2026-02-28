@@ -8,3 +8,4 @@ export { MiscItemsPage } from './misc-items';
 export { QuoteBuilderPage } from './quote-builder';
 export { QuotesPage } from './quotes';
 export { QuoteDetailsPage } from './quotes';
+export { SalesAgentsPage } from './sales-agents';

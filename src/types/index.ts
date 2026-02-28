@@ -201,6 +201,7 @@ export interface BrandFilterDto extends FilterDto {
 // Quote types
 export const QuoteStatus = {
     DRAFT: 'draft',
+    CREATED: 'created',
     SENT: 'sent',
     ACCEPTED: 'accepted',
     REJECTED: 'rejected',
@@ -278,4 +279,5 @@ export interface UpdateQuoteDto extends Partial<CreateQuoteDto> {
 
 export interface QuoteFilterDto extends FilterDto {
     status?: QuoteStatus;
+    salesUserId?: string;
 }

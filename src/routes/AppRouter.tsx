@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Sidebar } from '../components';
 import { useAuth } from '../contexts';
-import { ProtectedRoute } from './ProtectedRoute';
+import { ProtectedRoute, AdminRoute } from './index';
 import { UserRole } from '../types';
 import {
     LoginPage,
@@ -14,6 +14,7 @@ import {
     QuoteBuilderPage,
     QuotesPage,
     QuoteDetailsPage,
+    SalesAgentsPage,
 } from '../pages';
 
 function AppLayout({ children }: { children: React.ReactNode }) {
@@ -47,98 +48,18 @@ export function AppRouter() {
                 />
 
                 {/* Admin routes */}
-                <Route
-                    path="/"
-                    element={
-                        <ProtectedRoute>
-                            <AppLayout>
-                                <DashboardPage />
-                            </AppLayout>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/brands"
-                    element={
-                        <ProtectedRoute>
-                            <AppLayout>
-                                <BrandsPage />
-                            </AppLayout>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/solar-panels"
-                    element={
-                        <ProtectedRoute>
-                            <AppLayout>
-                                <SolarPanelsPage />
-                            </AppLayout>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/inverters"
-                    element={
-                        <ProtectedRoute>
-                            <AppLayout>
-                                <InvertersPage />
-                            </AppLayout>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/structures"
-                    element={
-                        <ProtectedRoute>
-                            <AppLayout>
-                                <StructuresPage />
-                            </AppLayout>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/misc-items"
-                    element={
-                        <ProtectedRoute>
-                            <AppLayout>
-                                <MiscItemsPage />
-                            </AppLayout>
-                        </ProtectedRoute>
-                    }
-                />
+                <Route path="/" element={<AdminRoute><AppLayout><DashboardPage /></AppLayout></AdminRoute>} />
+                <Route path="/brands" element={<AdminRoute><AppLayout><BrandsPage /></AppLayout></AdminRoute>} />
+                <Route path="/solar-panels" element={<AdminRoute><AppLayout><SolarPanelsPage /></AppLayout></AdminRoute>} />
+                <Route path="/inverters" element={<AdminRoute><AppLayout><InvertersPage /></AppLayout></AdminRoute>} />
+                <Route path="/structures" element={<AdminRoute><AppLayout><StructuresPage /></AppLayout></AdminRoute>} />
+                <Route path="/misc-items" element={<AdminRoute><AppLayout><MiscItemsPage /></AppLayout></AdminRoute>} />
+                <Route path="/sales-agents" element={<AdminRoute><AppLayout><SalesAgentsPage /></AppLayout></AdminRoute>} />
 
                 {/* Sales routes */}
-                <Route
-                    path="/quote-builder"
-                    element={
-                        <ProtectedRoute>
-                            <AppLayout>
-                                <QuoteBuilderPage />
-                            </AppLayout>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/quotes"
-                    element={
-                        <ProtectedRoute>
-                            <AppLayout>
-                                <QuotesPage />
-                            </AppLayout>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/quotes/:id"
-                    element={
-                        <ProtectedRoute>
-                            <AppLayout>
-                                <QuoteDetailsPage />
-                            </AppLayout>
-                        </ProtectedRoute>
-                    }
-                />
+                <Route path="/quote-builder" element={<ProtectedRoute><AppLayout><QuoteBuilderPage /></AppLayout></ProtectedRoute>} />
+                <Route path="/quotes" element={<ProtectedRoute><AppLayout><QuotesPage /></AppLayout></ProtectedRoute>} />
+                <Route path="/quotes/:id" element={<ProtectedRoute><AppLayout><QuoteDetailsPage /></AppLayout></ProtectedRoute>} />
 
                 {/* Catch all - redirect based on role */}
                 <Route path="*" element={<Navigate to={defaultRoute} replace />} />

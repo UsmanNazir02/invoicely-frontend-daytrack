@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { solarPanelService, brandService } from '../../services';
 import type { SolarPanel, CreateSolarPanelDto } from '../../types';
 import { BrandType } from '../../types';
+import { Pagination } from '../../components/ui';
 
 const solarPanelSchema = z.object({
     model: z.string().min(1, 'Model is required'),
@@ -118,9 +119,10 @@ function Modal({ isOpen, onClose, title, children }: { isOpen: boolean; onClose:
 export function SolarPanelsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPanel, setEditingPanel] = useState<SolarPanel | null>(null);
+    const [page, setPage] = useState(1);
     const queryClient = useQueryClient();
 
-    const { data, isLoading } = useQuery({ queryKey: ['solar-panels'], queryFn: () => solarPanelService.getAll() });
+    const { data, isLoading } = useQuery({ queryKey: ['solar-panels', page], queryFn: () => solarPanelService.getAll({ page, limit: 10 }) });
     const { data: brands } = useQuery({ queryKey: ['brands', 'solar-panel'], queryFn: () => brandService.getByType(BrandType.SOLAR_PANEL) });
 
     const createMutation = useMutation({
@@ -146,7 +148,12 @@ export function SolarPanelsPage() {
     const closeModal = () => { setIsModalOpen(false); setEditingPanel(null); reset(); };
     const onSubmit = (d: SolarPanelFormData) => editingPanel ? updateMutation.mutate({ id: editingPanel.id, data: d }) : createMutation.mutate(d);
 
-    const panels: SolarPanel[] = data?.items || (Array.isArray(data) ? data : []);
+    // @ts-expect-error Backend returns data.data instead of data.items for this endpoint
+    const panels: SolarPanel[] = data?.items || data?.data || (Array.isArray(data) ? data : []);
+    const totalRecords = (data as any)?.totalCount ?? (data as any)?.total ?? panels.length;
+    const limit = (data as any)?.limit ?? 10;
+    const totalPages = Math.ceil(totalRecords / limit);
+
     const brandOptions = (brands || []).map((b: { id: string; name: string }) => ({ value: b.id, label: b.name }));
 
     return (
@@ -174,9 +181,16 @@ export function SolarPanelsPage() {
 
             {/* Table card */}
             <div style={{ background: '#fff', border: '1px solid #f1f5f9', borderRadius: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
-                <div style={{ padding: '14px 20px', borderBottom: '1px solid #f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>All Solar Panels</span>
-                    <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '500' }}>{panels.length} records</span>
+                <div style={{ padding: '14px 20px', borderBottom: '1px solid #f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <span style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>All Solar Panels</span>
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            onPageChange={setPage}
+                            totalRecords={totalRecords}
+                        />
+                    </div>
                 </div>
 
                 {isLoading ? (

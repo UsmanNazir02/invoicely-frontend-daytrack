@@ -6,3 +6,4 @@ export { inverterService } from './inverter.service';
 export { structureService } from './structure.service';
 export { miscItemService } from './misc-item.service';
 export { quoteService } from './quote.service';
+export { userService } from './user.service';

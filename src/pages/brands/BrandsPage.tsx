@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { brandService } from '../../services';
 import type { Brand, CreateBrandDto } from '../../types';
 import { BrandType } from '../../types';
+import { Pagination } from '../../components/ui';
 
 const brandSchema = z.object({
     name: z.string().min(1, 'Name is required'),
@@ -131,9 +132,10 @@ export function BrandsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [page, setPage] = useState(1);
     const queryClient = useQueryClient();
 
-    const { data, isLoading } = useQuery({ queryKey: ['brands'], queryFn: () => brandService.getAll() });
+    const { data, isLoading } = useQuery({ queryKey: ['brands', page], queryFn: () => brandService.getAll({ page, limit: 10 }) });
 
     const createMutation = useMutation({
         mutationFn: (d: CreateBrandDto) => brandService.create(d),
@@ -158,7 +160,12 @@ export function BrandsPage() {
     const closeModal = () => { setIsModalOpen(false); setEditingBrand(null); reset(); };
     const onSubmit = (d: BrandFormData) => editingBrand ? updateMutation.mutate({ id: editingBrand.id, data: d }) : createMutation.mutate(d);
 
-    const brands: Brand[] = data?.items || (Array.isArray(data) ? data : []);
+    // @ts-expect-error Backend returns data.data instead of data.items for this endpoint
+    const brands: Brand[] = data?.items || data?.data || (Array.isArray(data) ? data : []);
+    const totalRecords = (data as any)?.totalCount ?? (data as any)?.total ?? brands.length;
+    const limit = (data as any)?.limit ?? 10;
+    const totalPages = Math.ceil(totalRecords / limit);
+
     const filtered = brands.filter(b => b.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
     return (
@@ -188,11 +195,19 @@ export function BrandsPage() {
             <div style={{ background: '#fff', border: '1px solid #f1f5f9', borderRadius: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
                 {/* Card header with search */}
                 <div style={{ padding: '14px 20px', borderBottom: '1px solid #f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>All Brands</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <span style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>All Brands</span>
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            onPageChange={setPage}
+                            totalRecords={totalRecords}
+                        />
+                    </div>
                     <div style={{ position: 'relative', width: '220px' }}>
                         <Search style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', width: '14px', height: '14px', color: '#9ca3af', pointerEvents: 'none' }} />
                         <input
-                            value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+                            value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setPage(1); }}
                             placeholder="Search brands…"
                             style={{ ...inputBase, height: '36px', paddingLeft: '32px', fontSize: '13px' }}
                             onFocus={e => { e.target.style.borderColor = '#2563eb'; e.target.style.background = '#fff'; }}

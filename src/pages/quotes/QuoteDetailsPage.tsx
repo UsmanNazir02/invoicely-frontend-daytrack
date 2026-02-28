@@ -12,6 +12,7 @@ import { QuoteStatus } from '../../types';
 /* ── reused status badge ── */
 const statusConfig: Record<string, { label: string; bg: string; color: string; border: string }> = {
     [QuoteStatus.DRAFT]: { label: 'Draft', bg: '#f8fafc', color: '#64748b', border: '#e2e8f0' },
+    [QuoteStatus.CREATED]: { label: 'Created', bg: '#fdf4ff', color: '#c026d3', border: '#fce7f3' },
     [QuoteStatus.SENT]: { label: 'Sent', bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
     [QuoteStatus.ACCEPTED]: { label: 'Accepted', bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' },
     [QuoteStatus.REJECTED]: { label: 'Rejected', bg: '#fff1f2', color: '#dc2626', border: '#fecaca' },
@@ -130,24 +131,22 @@ export function QuoteDetailsPage() {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    {q.status === QuoteStatus.DRAFT && (
-                        <Link to={`/quote-builder?draft=${q.id}`} style={{ textDecoration: 'none' }}>
-                            <button
-                                style={{
-                                    display: 'inline-flex', alignItems: 'center', gap: '6px',
-                                    height: '38px', padding: '0 16px', borderRadius: '9px',
-                                    border: '1.5px solid #e2e8f0', background: '#fff',
-                                    cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: '#374151',
-                                    transition: 'background 0.15s',
-                                }}
-                                onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; }}
-                                onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}
-                            >
-                                <Pencil style={{ width: '14px', height: '14px' }} />
-                                Continue Editing
-                            </button>
-                        </Link>
-                    )}
+                    <Link to={`/quote-builder?draft=${q.id}`} style={{ textDecoration: 'none' }}>
+                        <button
+                            style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                                height: '38px', padding: '0 16px', borderRadius: '9px',
+                                border: '1.5px solid #e2e8f0', background: '#fff',
+                                cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: '#374151',
+                                transition: 'background 0.15s',
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}
+                        >
+                            <Pencil style={{ width: '14px', height: '14px' }} />
+                            Edit Quote
+                        </button>
+                    </Link>
                     <Link to="/quote-builder" style={{ textDecoration: 'none' }}>
                         <button
                             style={{

@@ -3,11 +3,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Pencil, Trash2, Building, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Building, X, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { structureService } from '../../services';
 import type { Structure, CreateStructureDto } from '../../types';
 import { StructureType } from '../../types';
+import { Pagination } from '../../components/ui';
 
 const structureSchema = z.object({
     type: z.enum([StructureType.GROUND_MOUNT, StructureType.ELEVATED, StructureType.ROOFTOP], { message: 'Type is required' }),
@@ -130,9 +131,11 @@ function Modal({ isOpen, onClose, title, children }: { isOpen: boolean; onClose:
 export function StructuresPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingStructure, setEditingStructure] = useState<Structure | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [page, setPage] = useState(1);
     const queryClient = useQueryClient();
 
-    const { data, isLoading } = useQuery({ queryKey: ['structures'], queryFn: () => structureService.getAll() });
+    const { data, isLoading } = useQuery({ queryKey: ['structures', page], queryFn: () => structureService.getAll({ page, limit: 10 }) });
 
     const createMutation = useMutation({
         mutationFn: (d: CreateStructureDto) => structureService.create(d),
@@ -157,7 +160,13 @@ export function StructuresPage() {
     const closeModal = () => { setIsModalOpen(false); setEditingStructure(null); reset(); };
     const onSubmit = (d: StructureFormData) => editingStructure ? updateMutation.mutate({ id: editingStructure.id, data: d }) : createMutation.mutate(d);
 
-    const structures: Structure[] = data?.items || (Array.isArray(data) ? data : []);
+    // @ts-expect-error Backend returns data.data instead of data.items for this endpoint
+    const structures: Structure[] = data?.items || data?.data || (Array.isArray(data) ? data : []);
+    const totalRecords = (data as any)?.totalCount ?? (data as any)?.total ?? structures.length;
+    const limit = (data as any)?.limit ?? 10;
+    const totalPages = Math.ceil(totalRecords / limit);
+
+    const filtered = structures.filter(s => s.type.toLowerCase().includes(searchTerm.toLowerCase()) || (s.description && s.description.toLowerCase().includes(searchTerm.toLowerCase())));
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -185,9 +194,23 @@ export function StructuresPage() {
 
             {/* Table card */}
             <div style={{ background: '#fff', border: '1px solid #f1f5f9', borderRadius: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
-                <div style={{ padding: '14px 20px', borderBottom: '1px solid #f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>All Structures</span>
-                    <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '500' }}>{structures.length} records</span>
+                <div style={{ padding: '14px 20px', borderBottom: '1px solid #f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <span style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>All Structures</span>
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            onPageChange={setPage}
+                            totalRecords={totalRecords}
+                        />
+                    </div>
+                    <div style={{ position: 'relative', width: '220px' }}>
+                        <Search style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', width: '14px', height: '14px', color: '#9ca3af', pointerEvents: 'none' }} />
+                        <input
+                            value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setPage(1); }}
+                            placeholder="Search structures…"
+                            style={{ ...inputBase, height: '36px', paddingLeft: '32px', fontSize: '13px' }} />
+                    </div>
                 </div>
 
                 {isLoading ? (
@@ -209,7 +232,7 @@ export function StructuresPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {structures.map((s, idx) => (
+                                {filtered.map((s, idx) => (
                                     <tr key={s.id}
                                         style={{ borderBottom: idx < structures.length - 1 ? '1px solid #f8fafc' : 'none', transition: 'background 0.12s' }}
                                         onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#fafbff'; }}
