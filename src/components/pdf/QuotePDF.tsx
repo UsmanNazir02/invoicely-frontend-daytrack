@@ -5,8 +5,20 @@ import {
     View,
     StyleSheet,
     Image,
+    Font,
+    Svg,
+    Polygon
 } from '@react-pdf/renderer';
 import type { Quote } from '../../types';
+
+Font.register({
+    family: 'Montserrat',
+    fonts: [
+        { src: `${window.location.origin}/assets/pdf/fonts/Montserrat-Regular.ttf`, fontWeight: 'normal' },
+        { src: `${window.location.origin}/assets/pdf/fonts/Montserrat-Bold.ttf`, fontWeight: 'bold' },
+        { src: `${window.location.origin}/assets/pdf/fonts/Montserrat-ExtraBold.ttf`, fontWeight: 800 },
+    ]
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BACKGROUND IMAGE ANALYSIS (from side-by-side screenshot comparison):
@@ -27,7 +39,7 @@ import type { Quote } from '../../types';
 const styles = StyleSheet.create({
     page: {
         backgroundColor: '#ffffff',
-        fontFamily: 'Helvetica',
+        fontFamily: 'Montserrat',
     },
 
     // Cover bg: page-bg.png at full opacity = dark navy/teal with TFP logo
@@ -36,11 +48,11 @@ const styles = StyleSheet.create({
         top: 0, left: 0, right: 0, bottom: 0,
     },
 
-    // Inner page bg: cover-bg.png at very low opacity = barely-visible solar field
+    // Inner page bg: image35.png is CLEAN (no hardcoded page numbers)
     bgPageView: {
         position: 'absolute',
         top: 0, left: 0, right: 0, bottom: 0,
-        opacity: 0.08,
+        zIndex: -1,
     },
 
     bgImage: {
@@ -49,24 +61,23 @@ const styles = StyleSheet.create({
     },
 
     // ── Cover layout ──────────────────────────────────────────────────────────
-    // Original: text is LEFT-ALIGNED, positioned ~35% from top
-    // under the TFP logo which is baked into the top of page-bg.png
     coverWrapper: {
         flex: 1,
-        alignItems: 'flex-start',
+        alignItems: 'center', // Centered horizontally
         paddingTop: 190,
-        paddingLeft: 40,
-        paddingRight: 40,
+        paddingHorizontal: 40,
     },
     coverTitle: {
         fontSize: 32,
-        fontFamily: 'Helvetica-Bold',
+        fontFamily: 'Montserrat',
+        fontWeight: 'bold',
         marginBottom: 8,
         color: '#ffffff',
     },
     coverSubtitle: {
         fontSize: 26,
-        fontFamily: 'Helvetica-Bold',
+        fontFamily: 'Montserrat',
+        fontWeight: 'bold',
         marginBottom: 6,
         color: '#ffffff',
     },
@@ -78,8 +89,8 @@ const styles = StyleSheet.create({
 
     // ── Content area ──────────────────────────────────────────────────────────
     contentArea: {
-        paddingHorizontal: 45,
-        paddingBottom: 60,
+        paddingHorizontal: 70, // Increased for "middle" alignment
+        paddingBottom: 85, /* Safely avoids the newly restored footer banner */
     },
 
     // ── Customer info ─────────────────────────────────────────────────────────
@@ -94,12 +105,12 @@ const styles = StyleSheet.create({
     infoLabel: {
         width: 150,
         fontSize: 10,
-        color: '#374151',
+        color: '#000000',
     },
     infoValue: {
         flex: 1,
         fontSize: 10,
-        color: '#1f2937',
+        color: '#000000',
         borderBottomWidth: 1,
         borderBottomColor: '#888888',
         paddingBottom: 1,
@@ -111,23 +122,25 @@ const styles = StyleSheet.create({
         lineHeight: 1.6,
         marginBottom: 10,
         textAlign: 'justify',
-        color: '#1f2937',
+        color: '#000000',
     },
     paragraphBold: {
         fontSize: 9.5,
-        fontFamily: 'Helvetica-Bold',
+        fontFamily: 'Montserrat',
+        fontWeight: 'bold',
         lineHeight: 1.4,
         marginBottom: 2,
-        color: '#1f2937',
+        color: '#000000',
     },
 
     // ── Quotation table ───────────────────────────────────────────────────────
     tableTitle: {
         fontSize: 16,
-        fontFamily: 'Helvetica-Bold',
+        fontFamily: 'Montserrat',
+        fontWeight: 'bold',
         textAlign: 'center',
         marginBottom: 16,
-        color: '#1f2937',
+        color: '#000000',
     },
     table: {
         width: '100%',
@@ -147,8 +160,9 @@ const styles = StyleSheet.create({
         borderStyle: 'solid',
         textAlign: 'center',
         fontSize: 9,
-        fontFamily: 'Helvetica-Bold',
-        color: '#1f2937',
+        fontFamily: 'Montserrat',
+        fontWeight: 'bold',
+        color: '#000000',
     },
     sectionCell: {
         flex: 1,
@@ -159,8 +173,9 @@ const styles = StyleSheet.create({
         borderStyle: 'solid',
         textAlign: 'center',
         fontSize: 9,
-        fontFamily: 'Helvetica-Bold',
-        color: '#1f2937',
+        fontFamily: 'Montserrat',
+        fontWeight: 'bold',
+        color: '#000000',
     },
     tdCell: {
         padding: 7,
@@ -171,7 +186,7 @@ const styles = StyleSheet.create({
         borderStyle: 'solid',
         fontSize: 9,
         textAlign: 'center',
-        color: '#1f2937',
+        color: '#000000',
     },
     totalLabelCell: {
         flex: 1,
@@ -182,9 +197,10 @@ const styles = StyleSheet.create({
         borderColor: '#98c160',
         borderStyle: 'solid',
         fontSize: 9,
-        fontFamily: 'Helvetica-Bold',
+        fontFamily: 'Montserrat',
+        fontWeight: 'bold',
         textAlign: 'right',
-        color: '#1f2937',
+        color: '#000000',
     },
     totalValueCell: {
         width: '20%',
@@ -194,32 +210,35 @@ const styles = StyleSheet.create({
         borderColor: '#98c160',
         borderStyle: 'solid',
         fontSize: 9,
-        fontFamily: 'Helvetica-Bold',
+        fontFamily: 'Montserrat',
+        fontWeight: 'bold',
         textAlign: 'center',
-        color: '#1f2937',
+        color: '#000000',
     },
 
     // ── Terms ─────────────────────────────────────────────────────────────────
     pageHeader: {
         fontSize: 15,
-        fontFamily: 'Helvetica-Bold',
+        fontFamily: 'Montserrat',
+        fontWeight: 'bold',
         textAlign: 'center',
         marginBottom: 16,
-        color: '#1f2937',
+        color: '#000000',
     },
     section: {
         marginBottom: 11,
     },
     sectionTitle: {
         fontSize: 10,
-        fontFamily: 'Helvetica-Bold',
+        fontFamily: 'Montserrat',
+        fontWeight: 'bold',
         marginBottom: 3,
-        color: '#1f2937',
+        color: '#000000',
     },
     bodyText: {
         fontSize: 9.5,
         lineHeight: 1.5,
-        color: '#374151',
+        color: '#000000',
         marginBottom: 4,
     },
     bullet: {
@@ -227,14 +246,14 @@ const styles = StyleSheet.create({
         lineHeight: 1.5,
         marginLeft: 14,
         marginBottom: 3,
-        color: '#374151',
+        color: '#000000',
     },
     numbered: {
         fontSize: 9.5,
         lineHeight: 1.5,
         marginLeft: 18,
         marginBottom: 3,
-        color: '#374151',
+        color: '#000000',
     },
 
     // ── Checklist ─────────────────────────────────────────────────────────────
@@ -253,7 +272,7 @@ const styles = StyleSheet.create({
     },
     checkLabel: {
         fontSize: 9.5,
-        color: '#374151',
+        color: '#000000',
     },
 
     // ── Signatures ────────────────────────────────────────────────────────────
@@ -272,10 +291,11 @@ const styles = StyleSheet.create({
     },
     sigLabel: {
         fontSize: 10,
-        fontFamily: 'Helvetica-Bold',
+        fontFamily: 'Montserrat',
+        fontWeight: 'bold',
         textAlign: 'center',
         marginBottom: 14,
-        color: '#1f2937',
+        color: '#000000',
     },
     sigFieldRow: {
         flexDirection: 'row',
@@ -285,12 +305,29 @@ const styles = StyleSheet.create({
     sigFieldLabel: {
         width: 40,
         fontSize: 10,
-        color: '#1f2937',
+        color: '#000000',
     },
     sigFieldLine: {
         flex: 1,
         borderBottomWidth: 1,
         borderBottomColor: '#999999',
+    },
+    // Page Numbering
+    triangleFooter: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        width: 80,
+        height: 80,
+    },
+    pageNumberText: {
+        position: 'absolute',
+        bottom: 12,
+        right: 18,
+        fontSize: 16,
+        fontFamily: 'Montserrat',
+        fontWeight: 'bold',
+        color: '#ffffff',
     },
 });
 
@@ -319,16 +356,24 @@ function getCategory(itemType: string): string {
 
 function CoverBg() {
     return (
-        <View style={styles.bgCoverView} fixed>
-            <Image src="/assets/pdf/page-bg.png" style={styles.bgImage} />
+        <View style={[styles.bgCoverView, { zIndex: -1 }]} fixed>
+            <Image src="/assets/pdf/raw/image37.png" style={styles.bgImage} />
         </View>
     );
 }
 
-function PageBg() {
+function PageBg({ pageNum }: { pageNum?: number }) {
     return (
-        <View style={styles.bgPageView} fixed>
-            <Image src="/assets/pdf/cover-bg.png" style={styles.bgImage} />
+        <View style={[styles.bgPageView, { zIndex: -1 }]} fixed>
+            <Image src="/assets/pdf/raw/image35.png" style={styles.bgImage} />
+            {pageNum && (
+                <View style={styles.triangleFooter}>
+                    <Svg width="80" height="80">
+                        <Polygon points="80,0 80,80 0,80" fill="#98c160" />
+                    </Svg>
+                    <Text style={styles.pageNumberText}>{pageNum}</Text>
+                </View>
+            )}
         </View>
     );
 }
@@ -378,7 +423,7 @@ export function QuotePDF({ quote }: QuotePDFProps) {
 
             {/* ═════════════════════════════════════ PAGE 2 — COVER LETTER */}
             <Page size="A4" style={styles.page}>
-                <PageBg />
+                <PageBg pageNum={2} />
                 <View style={[styles.contentArea, { paddingTop: 110 }]}>
                     <View style={styles.customerInfoBlock}>
                         <View style={styles.infoRow}>
@@ -438,7 +483,7 @@ export function QuotePDF({ quote }: QuotePDFProps) {
 
             {/* ══════════════════════════════════ PAGE 3 — QUOTATION TABLE */}
             <Page size="A4" style={styles.page}>
-                <PageBg />
+                <PageBg pageNum={3} />
                 <View style={[styles.contentArea, { paddingTop: 110 }]}>
                     <Text style={styles.tableTitle}>QUOTATION</Text>
                     <View style={styles.table}>
@@ -489,7 +534,7 @@ export function QuotePDF({ quote }: QuotePDFProps) {
 
             {/* ══════════════════════════ PAGE 4 — TERMS & CONDITIONS (1/2) */}
             <Page size="A4" style={styles.page}>
-                <PageBg />
+                <PageBg pageNum={4} />
                 <View style={[styles.contentArea, { paddingTop: 110 }]}>
                     <Text style={styles.pageHeader}>TERMS &amp; CONDITIONS</Text>
 
@@ -577,7 +622,7 @@ export function QuotePDF({ quote }: QuotePDFProps) {
 
             {/* ══════════════════════════ PAGE 5 — TERMS & CONDITIONS (2/2) */}
             <Page size="A4" style={styles.page}>
-                <PageBg />
+                <PageBg pageNum={5} />
                 <View style={[styles.contentArea, { paddingTop: 110 }]}>
                     <Text style={styles.pageHeader}>TERMS &amp; CONDITIONS</Text>
 
@@ -617,7 +662,7 @@ export function QuotePDF({ quote }: QuotePDFProps) {
 
             {/* ════════════════════════════════ PAGE 6 — ACKNOWLEDGEMENTS */}
             <Page size="A4" style={styles.page}>
-                <PageBg />
+                <PageBg pageNum={6} />
                 <View style={[styles.contentArea, { paddingTop: 110 }]}>
                     <Text style={styles.pageHeader}>Acknowledgements</Text>
 
