@@ -8,6 +8,9 @@ import {
 import { quoteService } from '../../services';
 import type { Quote, QuoteItem } from '../../types';
 import { QuoteStatus } from '../../types';
+import { pdf } from '@react-pdf/renderer';
+import { QuotePDF } from '../../components/pdf/QuotePDF';
+import toast from 'react-hot-toast';
 
 /* ── reused status badge ── */
 const statusConfig: Record<string, { label: string; bg: string; color: string; border: string }> = {
@@ -92,6 +95,25 @@ export function QuoteDetailsPage() {
     const discountPct = Number(q.discountPercentage);
     const finalAmt = Number(q.finalAmount);
 
+    const handleDownloadPdf = async () => {
+        const toastId = toast.loading('Generating PDF...');
+        try {
+            const blob = await pdf(<QuotePDF quote={q} />).toBlob();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `Quote_${q.customerName?.replace(/\s+/g, '_')}_${q.id.slice(-6)}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            toast.success('PDF downloaded!', { id: toastId });
+        } catch (error) {
+            console.error('Failed to generate PDF', error);
+            toast.error('Failed to generate PDF', { id: toastId });
+        }
+    };
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
 
@@ -147,6 +169,20 @@ export function QuoteDetailsPage() {
                             Edit Quote
                         </button>
                     </Link>
+                    <button
+                        onClick={handleDownloadPdf}
+                        style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '6px',
+                            height: '38px', padding: '0 16px', borderRadius: '9px', border: '1.5px solid #2563eb',
+                            background: '#eff6ff', color: '#2563eb', cursor: 'pointer', fontSize: '13px', fontWeight: '700',
+                            transition: 'background 0.15s',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#dbeafe'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = '#eff6ff'; }}
+                    >
+                        <FileText style={{ width: '14px', height: '14px' }} />
+                        Download PDF
+                    </button>
                     <Link to="/quote-builder" style={{ textDecoration: 'none' }}>
                         <button
                             style={{

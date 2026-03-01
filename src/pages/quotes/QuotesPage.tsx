@@ -11,6 +11,8 @@ import { useAuth } from '../../contexts';
 import { Pagination } from '../../components/ui';
 import type { Quote } from '../../types';
 import { QuoteStatus, UserRole } from '../../types';
+import { pdf } from '@react-pdf/renderer';
+import { QuotePDF } from '../../components/pdf/QuotePDF';
 
 /* ── status config ── */
 const statusConfig: Record<string, { label: string; bg: string; color: string; border: string }> = {
@@ -35,29 +37,66 @@ function StatusBadge({ status }: { status: string }) {
     );
 }
 
-function IconBtn({ onClick, title, danger, children }: {
-    onClick?: () => void; title?: string; danger?: boolean; children: React.ReactNode;
+function IconBtn({ onClick, title, danger, disabled, children }: {
+    onClick?: () => void; title?: string; danger?: boolean; disabled?: boolean; children: React.ReactNode;
 }) {
     return (
         <button
             onClick={onClick}
             title={title}
+            disabled={disabled}
             style={{
                 width: '34px', height: '34px', borderRadius: '8px', border: '1px solid #e2e8f0',
-                background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: danger ? '#dc2626' : '#374151', transition: 'background 0.15s, border-color 0.15s',
+                background: disabled ? '#f8fafc' : '#fff', cursor: disabled ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: danger ? '#dc2626' : (disabled ? '#cbd5e1' : '#374151'), transition: 'background 0.15s, border-color 0.15s',
             }}
             onMouseEnter={e => {
+                if (disabled) return;
                 e.currentTarget.style.background = danger ? '#fff1f2' : '#f8fafc';
                 e.currentTarget.style.borderColor = danger ? '#fecaca' : '#cbd5e1';
             }}
             onMouseLeave={e => {
+                if (disabled) return;
                 e.currentTarget.style.background = '#fff';
                 e.currentTarget.style.borderColor = '#e2e8f0';
             }}
         >
             {children}
         </button>
+    );
+}
+
+/* ── on-demand pdf downloader component ── */
+function DownloadQuoteBtn({ quote }: { quote: Quote }) {
+    const [isGenerating, setIsGenerating] = useState(false);
+
+    const handleDownload = async () => {
+        if (isGenerating) return;
+        setIsGenerating(true);
+        const toastId = toast.loading('Generating PDF...');
+        try {
+            const blob = await pdf(<QuotePDF quote={quote} />).toBlob();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `Quote_${quote.customerName?.replace(/\s+/g, '_')}_${quote.id.slice(-6)}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            toast.success('PDF downloaded!', { id: toastId });
+        } catch (error) {
+            console.error('Failed to generate PDF', error);
+            toast.error('Failed to generate PDF', { id: toastId });
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    return (
+        <IconBtn title="Download PDF" onClick={handleDownload} disabled={isGenerating}>
+            <FileText style={{ width: '14px', height: '14px', color: isGenerating ? '#94a3b8' : '#374151' }} />
+        </IconBtn>
     );
 }
 
@@ -318,6 +357,7 @@ export function QuotesPage() {
                                                         <Pencil style={{ width: '14px', height: '14px' }} />
                                                     </IconBtn>
                                                 </Link>
+                                                <DownloadQuoteBtn quote={quote} />
                                                 <Link to={`/quotes/${quote.id}`} style={{ textDecoration: 'none' }}>
                                                     <IconBtn title="View quote">
                                                         <Eye style={{ width: '14px', height: '14px' }} />
