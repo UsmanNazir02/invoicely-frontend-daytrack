@@ -135,12 +135,15 @@ export function QuotesPage() {
     const limit = (data as any)?.limit ?? 10;
     const totalPages = Math.ceil(totalRecords / limit);
 
-    const totalValue = quotes.reduce((s, q) => s + Number(q.finalAmount), 0);
-    const sentCount = quotes.filter(q => q.status === QuoteStatus.SENT).length;
-    const createdCount = quotes.filter(q => q.status === QuoteStatus.CREATED).length;
+    // Global stats from backend
+    const statsData = (data as any)?.stats;
+    const totalValue = statsData?.totalValue ?? quotes.reduce((s, q) => s + Number(q.finalAmount), 0);
+    const sentCount = statsData?.sentCount ?? quotes.filter(q => q.status === QuoteStatus.SENT).length;
+    const createdCount = statsData?.createdCount ?? quotes.filter(q => q.status === QuoteStatus.CREATED).length;
+    const totalQuotes = statsData?.totalQuotes ?? totalRecords;
 
     const stats = [
-        { label: 'Total Quotes', value: quotes.length, icon: <FileText style={{ width: '18px', height: '18px', color: '#2563eb' }} />, bg: '#eff6ff', border: '#bfdbfe' },
+        { label: 'Total Quotes', value: totalQuotes, icon: <FileText style={{ width: '18px', height: '18px', color: '#2563eb' }} />, bg: '#eff6ff', border: '#bfdbfe' },
         { label: 'Sent', value: sentCount, icon: <Send style={{ width: '18px', height: '18px', color: '#7c3aed' }} />, bg: '#faf5ff', border: '#e9d5ff' },
         { label: 'Created', value: createdCount, icon: <FilePlus style={{ width: '18px', height: '18px', color: '#c026d3' }} />, bg: '#fdf4ff', border: '#fce7f3' },
         { label: 'Total Value', value: `Rs. ${totalValue.toLocaleString()}`, icon: <DollarSign style={{ width: '18px', height: '18px', color: '#ca8a04' }} />, bg: '#fefce8', border: '#fef08a', wide: true },

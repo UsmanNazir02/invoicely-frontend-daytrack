@@ -21,21 +21,6 @@ Font.register({
     ]
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// BACKGROUND IMAGE ANALYSIS (from side-by-side screenshot comparison):
-//
-// The generated PDF shows:
-//   - cover-bg.png renders as: light grey solar field landscape
-//   - page-bg.png renders as:  large TFP logo + solar panel circle (teal/dark bg)
-//
-// The ORIGINAL reference PDF shows:
-//   - Page 1 cover: dark navy/teal city skyline WITH TFP logo = page-bg.png
-//   - Pages 2-6: barely-visible light solar field watermark = cover-bg.png @ ~0.08
-//
-// CONCLUSION: The filenames are SWAPPED from what we'd expect.
-//   Cover page  → use page-bg.png  (full opacity — this IS the dark teal cover)
-//   Inner pages → use cover-bg.png (opacity 0.08 — barely visible watermark)
-// ─────────────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
     page: {
