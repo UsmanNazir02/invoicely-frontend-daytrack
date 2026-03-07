@@ -15,6 +15,7 @@ Font.register({
     family: 'Montserrat',
     fonts: [
         { src: `${window.location.origin}/assets/pdf/fonts/Montserrat-Regular.ttf`, fontWeight: 'normal' },
+        { src: `${window.location.origin}/assets/pdf/fonts/Montserrat-Italic.ttf`, fontWeight: 'normal', fontStyle: 'italic' },
         { src: `${window.location.origin}/assets/pdf/fonts/Montserrat-Bold.ttf`, fontWeight: 'bold' },
         { src: `${window.location.origin}/assets/pdf/fonts/Montserrat-ExtraBold.ttf`, fontWeight: 800 },
     ]
@@ -89,7 +90,7 @@ const styles = StyleSheet.create({
 
     // ── Content area ──────────────────────────────────────────────────────────
     contentArea: {
-        paddingHorizontal: 70, // Increased for "middle" alignment
+        paddingHorizontal: 85, // Increased for "middle" alignment
         paddingBottom: 85, /* Safely avoids the newly restored footer banner */
     },
 
@@ -99,17 +100,17 @@ const styles = StyleSheet.create({
     },
     infoRow: {
         flexDirection: 'row',
-        marginBottom: 8,
+        marginBottom: 6,
         alignItems: 'flex-end',
     },
     infoLabel: {
         width: 150,
-        fontSize: 10,
+        fontSize: 9.5,
         color: '#000000',
     },
     infoValue: {
         flex: 1,
-        fontSize: 10,
+        fontSize: 9.5,
         color: '#000000',
         borderBottomWidth: 1,
         borderBottomColor: '#888888',
@@ -118,17 +119,17 @@ const styles = StyleSheet.create({
 
     // ── Body text ─────────────────────────────────────────────────────────────
     paragraph: {
-        fontSize: 9.5,
-        lineHeight: 1.6,
-        marginBottom: 10,
+        fontSize: 9,
+        lineHeight: 1.35,
+        marginBottom: 8,
         textAlign: 'justify',
         color: '#000000',
     },
     paragraphBold: {
-        fontSize: 9.5,
+        fontSize: 9,
         fontFamily: 'Montserrat',
         fontWeight: 'bold',
-        lineHeight: 1.4,
+        lineHeight: 1.3,
         marginBottom: 2,
         color: '#000000',
     },
@@ -145,7 +146,7 @@ const styles = StyleSheet.create({
     table: {
         width: '100%',
         borderWidth: 1,
-        borderColor: '#98c160',
+        borderColor: '#72bf44',
         borderStyle: 'solid',
     },
     tableRow: {
@@ -156,7 +157,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#e9f4d9',
         borderBottomWidth: 1,
         borderRightWidth: 1,
-        borderColor: '#98c160',
+        borderColor: '#72bf44',
         borderStyle: 'solid',
         textAlign: 'center',
         fontSize: 9,
@@ -169,7 +170,7 @@ const styles = StyleSheet.create({
         padding: 7,
         backgroundColor: '#d4edaa',
         borderBottomWidth: 1,
-        borderColor: '#98c160',
+        borderColor: '#72bf44',
         borderStyle: 'solid',
         textAlign: 'center',
         fontSize: 9,
@@ -182,7 +183,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#f8fbf5',
         borderBottomWidth: 1,
         borderRightWidth: 1,
-        borderColor: '#98c160',
+        borderColor: '#72bf44',
         borderStyle: 'solid',
         fontSize: 9,
         textAlign: 'center',
@@ -194,7 +195,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#e9f4d9',
         borderBottomWidth: 1,
         borderRightWidth: 1,
-        borderColor: '#98c160',
+        borderColor: '#72bf44',
         borderStyle: 'solid',
         fontSize: 9,
         fontFamily: 'Montserrat',
@@ -207,7 +208,7 @@ const styles = StyleSheet.create({
         padding: 7,
         backgroundColor: '#e9f4d9',
         borderBottomWidth: 1,
-        borderColor: '#98c160',
+        borderColor: '#72bf44',
         borderStyle: 'solid',
         fontSize: 9,
         fontFamily: 'Montserrat',
@@ -222,37 +223,48 @@ const styles = StyleSheet.create({
         fontFamily: 'Montserrat',
         fontWeight: 'bold',
         textAlign: 'center',
-        marginBottom: 16,
+        marginBottom: 12,
         color: '#000000',
     },
     section: {
-        marginBottom: 11,
+        marginBottom: 8,
     },
     sectionTitle: {
-        fontSize: 10,
+        fontSize: 9.5,
         fontFamily: 'Montserrat',
         fontWeight: 'bold',
-        marginBottom: 3,
+        marginBottom: 2,
         color: '#000000',
     },
     bodyText: {
-        fontSize: 9.5,
-        lineHeight: 1.5,
+        fontSize: 9,
+        lineHeight: 1.3,
         color: '#000000',
-        marginBottom: 4,
+        marginBottom: 2,
     },
     bullet: {
-        fontSize: 9.5,
-        lineHeight: 1.5,
+        fontSize: 9,
+        lineHeight: 1.3,
         marginLeft: 14,
         marginBottom: 3,
         color: '#000000',
     },
+    bulletTitle: {
+        fontWeight: 'bold',
+        color: '#000000',
+    },
+    circleBullet: {
+        fontSize: 9,
+        lineHeight: 1.3,
+        marginLeft: 28,
+        marginBottom: 2,
+        color: '#000000',
+    },
     numbered: {
-        fontSize: 9.5,
-        lineHeight: 1.5,
+        fontSize: 9,
+        lineHeight: 1.3,
         marginLeft: 18,
-        marginBottom: 3,
+        marginBottom: 2,
         color: '#000000',
     },
 
@@ -260,18 +272,18 @@ const styles = StyleSheet.create({
     checkRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 6,
+        marginBottom: 5,
     },
     checkBox: {
-        width: 13,
-        height: 13,
+        width: 12,
+        height: 12,
         borderWidth: 1,
         borderColor: '#374151',
         marginRight: 10,
         backgroundColor: '#ffffff',
     },
     checkLabel: {
-        fontSize: 9.5,
+        fontSize: 9,
         color: '#000000',
     },
 
@@ -279,7 +291,7 @@ const styles = StyleSheet.create({
     sigContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginTop: 55,
+        marginTop: 45,
     },
     sigBlock: {
         width: '40%',
@@ -357,7 +369,7 @@ function getCategory(itemType: string): string {
 function CoverBg() {
     return (
         <View style={[styles.bgCoverView, { zIndex: -1 }]} fixed>
-            <Image src="/assets/pdf/raw/image37.png" style={styles.bgImage} />
+            <Image src={`${window.location.origin}/assets/pdf/page-bg.png`} style={styles.bgImage} />
         </View>
     );
 }
@@ -365,11 +377,23 @@ function CoverBg() {
 function PageBg({ pageNum }: { pageNum?: number }) {
     return (
         <View style={[styles.bgPageView, { zIndex: -1 }]} fixed>
-            <Image src="/assets/pdf/raw/image35.png" style={styles.bgImage} />
+            {/* Using page3-bg.png because it has the logo and the newer A-19 address */}
+            <Image src={`${window.location.origin}/assets/pdf/page3-bg.png`} style={styles.bgImage} />
+
+            {/* Cover the hardcoded "3" in the corner of page3-bg.png */}
+            <View style={{
+                position: 'absolute',
+                bottom: 8,
+                right: 12,
+                width: 30,
+                height: 30,
+                backgroundColor: '#ffffff'
+            }} />
+
             {pageNum && (
                 <View style={styles.triangleFooter}>
                     <Svg width="80" height="80">
-                        <Polygon points="80,0 80,80 0,80" fill="#98c160" />
+                        <Polygon points="80,0 80,80 0,80" fill="#72bf44" />
                     </Svg>
                     <Text style={styles.pageNumberText}>{pageNum}</Text>
                 </View>
@@ -423,7 +447,7 @@ export function QuotePDF({ quote }: QuotePDFProps) {
 
             {/* ═════════════════════════════════════ PAGE 2 — COVER LETTER */}
             <Page size="A4" style={styles.page}>
-                <PageBg pageNum={2} />
+                <PageBg pageNum={1} />
                 <View style={[styles.contentArea, { paddingTop: 110 }]}>
                     <View style={styles.customerInfoBlock}>
                         <View style={styles.infoRow}>
@@ -483,7 +507,7 @@ export function QuotePDF({ quote }: QuotePDFProps) {
 
             {/* ══════════════════════════════════ PAGE 3 — QUOTATION TABLE */}
             <Page size="A4" style={styles.page}>
-                <PageBg pageNum={3} />
+                <PageBg pageNum={2} />
                 <View style={[styles.contentArea, { paddingTop: 110 }]}>
                     <Text style={styles.tableTitle}>QUOTATION</Text>
                     <View style={styles.table}>
@@ -532,167 +556,164 @@ export function QuotePDF({ quote }: QuotePDFProps) {
                 </View>
             </Page>
 
-            {/* ══════════════════════════ PAGE 4 — TERMS & CONDITIONS (1/2) */}
+            {/* ══════════════════════════ PAGE 4 — TERMS & CONDITIONS (PART 1) */}
+            <Page size="A4" style={styles.page}>
+                <PageBg pageNum={3} />
+                <View style={[styles.contentArea, { paddingTop: 110 }]}>
+                    <View style={{ marginBottom: 15 }}>
+                        <Text style={[styles.pageHeader, { fontWeight: 'bold' }]}>TERMS &amp; CONDITIONS</Text>
+                    </View>
+
+                    <View style={styles.section}>
+                        <Text style={styles.bullet}>
+                            <Text style={styles.bulletTitle}>{'\u2022'} Indicative Price: PKR {Number(quote.finalAmount).toLocaleString()}/-, </Text>
+                            which is based on USD-PKR exchange rate of [280.07] PKR = 1 USD as at the date of this quotation. The impact of any depreciation in PKR with respect to the USD-PKR exchange rate forms part of the total product price and will be charged to the customer as set out below.
+                        </Text>
+
+                        <Text style={styles.bullet}>
+                            <Text style={styles.bulletTitle}>{'\u2022'} Price Validity: </Text>
+                            Price quoted is valid for 10 days from the date of quotation ({today}) or the date of confirmation/acceptance of order by customer, whichever is the earlier.
+                        </Text>
+
+                        <Text style={styles.bullet}>
+                            <Text style={styles.bulletTitle}>{'\u2022'} Other Terms: </Text>
+                            All payments to be made by crossed cheque in the name of The Future Power. Order by Customer will be deemed confirmed/accepted upon receipt of advance payment as per Payment Option selected by the Customer. Final Price of System will be calculated on USD-PKR exchange rate as at the date of installation or date of final payment by the customer. Balance, if any, due on account of exchange rate variation shall be paid by Customer upon invoice raised by The Future Power before installation of System at site.
+                        </Text>
+
+                        <Text style={styles.bullet}>
+                            <Text style={styles.bulletTitle}>{'\u2022'} Warranty: </Text>
+                            10 Years Inverter &amp; Battery Warranty.
+                        </Text>
+                        <View style={{ marginLeft: 30 }}>
+                            <Text style={styles.bullet}>{'\u25CB'} 12 years Solar Panel manufacturing Warranty.</Text>
+                            <Text style={styles.bullet}>{'\u25CB'} 25 years Solar Panel performance Warranty.</Text>
+                        </View>
+
+                        <Text style={styles.bullet}>
+                            <Text style={styles.bulletTitle}>{'\u2022'} Operation &amp; Maintenance: </Text>
+                            One (1) year free-of-cost O&amp;M services as per prevailing company policy. Thereafter, Customer will be charged for O&amp;M subject to contract.
+                        </Text>
+
+                        <Text style={styles.bullet}>
+                            <Text style={styles.bulletTitle}>{'\u2022'} Cleaning Services: </Text>
+                            Three (3) month free-of-cost Solar Panel cleaning Service as per prevailing company policy. Thereafter, Customer will be charged for cleaning service subject to contract.
+                        </Text>
+
+                        <Text style={styles.bullet}>
+                            <Text style={styles.bulletTitle}>{'\u2022'} Payment Option: </Text>
+                        </Text>
+                        <View style={{ marginLeft: 30 }}>
+                            <Text style={styles.bullet}>{'\u25CB'} Delivery Timeline: Option 1: Within 15 days from date of confirmation of order</Text>
+                            <Text style={styles.bullet}>{'\u25CB'} Payment Terms: 60% advance payment of Indicative Price</Text>
+                            <View style={{ marginLeft: 45 }}>
+                                <Text style={styles.bullet}>{'\u2022'} 30% On Day Of Material Delivery</Text>
+                                <Text style={styles.bullet}>{'\u2022'} 10% After Installation</Text>
+                            </View>
+                        </View>
+
+                        <Text style={styles.bullet}>
+                            <Text style={styles.bulletTitle}>{'\u2022'} Net Metering: </Text>
+                            The Future Power will assist Customer in procuring Net Metering. The obligation to procure required approvals rests with the Customer. In no circumstances shall The Future Power be held liable on any account if the said approval is not granted by NEPRA. The Future Power will assist Customer to prepare the required documentation for Net-Metering. Other Customer responsibilities for Net Metering include:
+                        </Text>
+                        <View style={{ marginLeft: 30 }}>
+                            <Text style={styles.bullet}>{'\u25CB'} DC/AC Earthing</Text>
+                            <Text style={styles.bullet}>{'\u25CB'} Meter Name change</Text>
+                            <Text style={styles.bullet}>{'\u25CB'} Sanction load change</Text>
+                            <Text style={styles.bullet}>{'\u25CB'} Net-Metering demand notice payment</Text>
+                        </View>
+
+                        <Text style={[styles.bodyText, { marginTop: 8, fontSize: 8.5, fontStyle: 'italic', textAlign: 'justify' }]}>
+                            Note: Fee for facilitation services rendered in Net-Metering will be charged separately at per actual. It will be applicable as per the laws of NEPRA and local DISCO. This is an additional service for customer support. Timeline for Net-Metering to be operational depends on the NEPRA/DISCO approvals.
+                        </Text>
+                    </View>
+                </View>
+            </Page>
+
+            {/* ══════════════════════════ PAGE 5 — SCOPE & CHECKLIST */}
             <Page size="A4" style={styles.page}>
                 <PageBg pageNum={4} />
                 <View style={[styles.contentArea, { paddingTop: 110 }]}>
-                    <Text style={styles.pageHeader}>TERMS &amp; CONDITIONS</Text>
+                    <Text style={[styles.pageHeader, { fontWeight: 'bold' }]}>TERMS &amp; CONDITIONS</Text>
 
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Indicative Price:</Text>
-                        <Text style={styles.bodyText}>
-                            PKR {Number(quote.finalAmount).toLocaleString()}/- , which is based on USD-PKR exchange rate as at
-                            the date of this quotation. The impact of any depreciation in PKR with respect to the USD-PKR
-                            exchange rate forms part of the total product price and will be charged to the customer.
-                        </Text>
+                    {/* Scope of Work */}
+                    <View style={[styles.section, { marginTop: 20 }]}>
+                        <Text style={[styles.sectionTitle, { fontSize: 10 }]}>Scope of Work (Not Included):</Text>
+                        <Text style={[styles.bodyText, { marginBottom: 10 }]}>Price does not include:</Text>
+                        <View style={{ marginLeft: 15 }}>
+                            <Text style={styles.numbered}>i.    Cost of any civil works,</Text>
+                            <Text style={styles.numbered}>ii.   Extra cable cost for length of cable beyond what is specified in Standard Scope of Work.</Text>
+                            <Text style={styles.numbered}>iii.  Interconnection between one distribution box to another distribution box and switched works and costs;</Text>
+                            <Text style={styles.numbered}>iv. Customized solutions, v. Special/Shed Type Structure, vi. Out of City system delivery to site</Text>
+                            <Text style={styles.numbered}>vii. Meter name change, viii. Meter sanctioned load change and I&amp;C required other than the above-mentioned scope of work shall be charged as per actual.</Text>
+                        </View>
                     </View>
 
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Price Validity:</Text>
-                        <Text style={styles.bodyText}>
-                            Price quoted is valid for 10 days from the date of quotation ({today}) or the date of
-                            confirmation/acceptance of order by customer, whichever is the earlier.
+                    {/* Customer Check List */}
+                    <View style={[styles.section, { marginTop: 40 }]}>
+                        <Text style={[styles.tableTitle, { textAlign: 'center', marginBottom: 5 }]}>
+                            CUSTOMER CHECK LIST
                         </Text>
-                    </View>
-
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Other Terms:</Text>
-                        <Text style={styles.bodyText}>
-                            All payments to be made by crossed cheque in the name of The Future Power. Order by Customer will be
-                            deemed confirmed/accepted upon receipt of advance payment as per Payment Option selected by the
-                            Customer. Final Price of System will be calculated on USD-PKR exchange rate as at the date of
-                            installation or date of final payment by the customer. Balance, if any, due on account of exchange
-                            rate variation shall be paid by Customer upon invoice raised by The Future Power before installation
-                            of System at site.
+                        <Text style={[styles.bodyText, { textAlign: 'center', marginBottom: 20, fontSize: 8 }]}>
+                            (Tick the boxes if you have the following)
                         </Text>
-                    </View>
 
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Warranty:</Text>
-                        <Text style={styles.bullet}>• 10 Years Inverter &amp; Battery Warranty.</Text>
-                        <Text style={styles.bullet}>• 12 years Solar Panel manufacturing Warranty.</Text>
-                        <Text style={styles.bullet}>• 25 years Solar Panel performance Warranty.</Text>
-                    </View>
-
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Operation &amp; Maintenance:</Text>
-                        <Text style={styles.bodyText}>
-                            One (1) year free-of-cost O&amp;M services as per prevailing company policy. Thereafter, Customer
-                            will be charged for O&amp;M subject to contract.
-                        </Text>
-                    </View>
-
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Cleaning Services:</Text>
-                        <Text style={styles.bodyText}>
-                            Three (3) month free-of-cost Solar Panel cleaning Service as per prevailing company policy.
-                            Thereafter, Customer will be charged for cleaning service subject to contract.
-                        </Text>
-                    </View>
-
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Payment Option &amp; Delivery Timeline:</Text>
-                        <Text style={styles.bullet}>• Option 1: Within 15 days from date of confirmation of order</Text>
-                        <Text style={styles.bullet}>• 60% advance payment of Indicative Price</Text>
-                        <Text style={styles.bullet}>• 30% On Day Of Material Delivery</Text>
-                        <Text style={styles.bullet}>• 10% After Installation</Text>
-                    </View>
-
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Net Metering:</Text>
-                        <Text style={styles.bodyText}>
-                            The Future Power will assist Customer in procuring Net Metering. The obligation to procure required
-                            approvals rests with the Customer. In no circumstances shall The Future Power be held liable on any
-                            account if the said approval is not granted by NEPRA. The Future Power will assist Customer to prepare
-                            the required documentation for Net-Metering.
-                        </Text>
-                        <Text style={styles.sectionTitle}>Other Customer responsibilities for Net Metering include:</Text>
-                        <Text style={styles.bullet}>• DC/AC Earthing</Text>
-                        <Text style={styles.bullet}>• Meter Name change</Text>
-                        <Text style={styles.bullet}>• Sanction load change</Text>
-                        <Text style={styles.bullet}>• Net-Metering demand notice payment</Text>
-                        <Text style={[styles.bodyText, { marginTop: 4 }]}>
-                            Note: Fee for facilitation services rendered in Net-Metering will be charged separately at per actual.
-                            It will be applicable as per the laws of NEPRA and local DISCO. This is an additional service for
-                            customer support. Timeline for Net-Metering to be operational depends on the NEPRA/DISCO approvals.
-                        </Text>
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 15, justifyContent: 'space-between', paddingHorizontal: 40 }}>
+                            {[
+                                'Proposal',
+                                'CNIC Copy / NTN Certificate (In case of business)',
+                                'Last Month Bill Copy',
+                                'Advance Payment Cheque',
+                                'PV Layout Design',
+                                'Sanction Load As Per System',
+                                'Meter Name as Per Requirement',
+                            ].map((label, key) => (
+                                <View style={[styles.checkRow, { width: '45%' }]} key={key}>
+                                    <View style={styles.checkBox} />
+                                    <Text style={styles.checkLabel}>{label}</Text>
+                                </View>
+                            ))}
+                        </View>
                     </View>
                 </View>
             </Page>
 
-            {/* ══════════════════════════ PAGE 5 — TERMS & CONDITIONS (2/2) */}
+            {/* ══════════════════════════ PAGE 6 — ACKNOWLEDGEMENTS */}
             <Page size="A4" style={styles.page}>
                 <PageBg pageNum={5} />
                 <View style={[styles.contentArea, { paddingTop: 110 }]}>
-                    <Text style={styles.pageHeader}>TERMS &amp; CONDITIONS</Text>
+                    <Text style={[styles.tableTitle, { fontSize: 20, marginBottom: 50 }]}>Acknowledgements</Text>
 
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Scope of Work (Not Included):</Text>
-                        <Text style={styles.bodyText}>Price does not include:</Text>
-                        <Text style={styles.numbered}>i.    Cost of any civil works,</Text>
-                        <Text style={styles.numbered}>ii.   Extra cable cost for length of cable beyond what is specified in Standard Scope of Work.</Text>
-                        <Text style={styles.numbered}>iii.  Interconnection between one distribution box to another distribution box and switched works and costs;</Text>
-                        <Text style={styles.numbered}>iv.   Customized solutions,</Text>
-                        <Text style={styles.numbered}>v.    Special/Shed Type Structure,</Text>
-                        <Text style={styles.numbered}>vi.   Out of City system delivery to site</Text>
-                        <Text style={styles.numbered}>vii.  Meter name change,</Text>
-                        <Text style={styles.numbered}>viii. Meter sanctioned load change and I&amp;C required other than the above-mentioned scope of work shall be charged as per actual.</Text>
-                    </View>
-
-                    <View style={[styles.section, { marginTop: 16 }]}>
-                        <Text style={styles.sectionTitle}>
-                            CUSTOMER CHECK LIST (Tick the boxes if you have the following):
-                        </Text>
-                        {[
-                            'CNIC Copy / NTN Certificate',
-                            'Last Month Bill Copy',
-                            'Advance Payment Cheque',
-                            'PV Layout Design',
-                            'Sanction Load As Per System',
-                            'Meter Name as Per Requirement',
-                        ].map((label, i) => (
-                            <View style={styles.checkRow} key={i}>
-                                <View style={styles.checkBox} />
-                                <Text style={styles.checkLabel}>{label}</Text>
-                            </View>
-                        ))}
-                    </View>
-                </View>
-            </Page>
-
-            {/* ════════════════════════════════ PAGE 6 — ACKNOWLEDGEMENTS */}
-            <Page size="A4" style={styles.page}>
-                <PageBg pageNum={6} />
-                <View style={[styles.contentArea, { paddingTop: 110 }]}>
-                    <Text style={styles.pageHeader}>Acknowledgements</Text>
-
-                    <Text style={styles.paragraph}>
+                    <Text style={[styles.paragraph, { fontSize: 10, lineHeight: 1.6, marginBottom: 50, textAlign: 'justify' }]}>
                         I acknowledge and represent that I have read the terms and Conditions of this proposal and I fully
                         understand what is stated Herein. I expressly agree to all the terms and conditions set out Herein and to
                         adhere to all payment's obligations and other Ancillary obligations. In signing this proposal, I am not
                         relying on Any other representation made by the company to me.
                     </Text>
 
-                    <View style={styles.sigContainer}>
+                    <View style={[styles.sigContainer, { marginTop: 40 }]}>
                         <View style={styles.sigBlock}>
                             <View style={styles.sigLine} />
                             <Text style={styles.sigLabel}>Customer Sign</Text>
-                            {(['Name:', 'Date:', 'CNIC:'] as const).map((lbl, i) => (
-                                <View style={styles.sigFieldRow} key={i}>
-                                    <Text style={styles.sigFieldLabel}>{lbl}</Text>
-                                    <View style={styles.sigFieldLine} />
-                                </View>
-                            ))}
+                            <View style={{ marginTop: 20 }}>
+                                {(['Name:', 'Date:', 'CNIC:'] as const).map((lbl, i) => (
+                                    <View style={styles.sigFieldRow} key={lbl}>
+                                        <Text style={styles.sigFieldLabel}>{lbl}</Text>
+                                        <View style={styles.sigFieldLine} />
+                                    </View>
+                                ))}
+                            </View>
                         </View>
                         <View style={styles.sigBlock}>
                             <View style={styles.sigLine} />
                             <Text style={styles.sigLabel}>Sales Representative Sign</Text>
-                            {(['Name:', 'Date:'] as const).map((lbl, i) => (
-                                <View style={styles.sigFieldRow} key={i}>
-                                    <Text style={styles.sigFieldLabel}>{lbl}</Text>
-                                    <View style={styles.sigFieldLine} />
-                                </View>
-                            ))}
+                            <View style={{ marginTop: 20 }}>
+                                {(['Name:', 'Date:'] as const).map((lbl, i) => (
+                                    <View style={styles.sigFieldRow} key={lbl}>
+                                        <Text style={styles.sigFieldLabel}>{lbl}</Text>
+                                        <View style={styles.sigFieldLine} />
+                                    </View>
+                                ))}
+                            </View>
                         </View>
                     </View>
                 </View>
