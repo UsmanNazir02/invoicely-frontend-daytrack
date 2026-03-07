@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import {
@@ -95,7 +95,11 @@ export function QuoteDetailsPage() {
     const discountPct = Number(q.discountPercentage);
     const finalAmt = Number(q.finalAmount);
 
+    const [isDownloading, setIsDownloading] = useState(false);
+
     const handleDownloadPdf = async () => {
+        if (isDownloading) return;
+        setIsDownloading(true);
         const toastId = toast.loading('Generating PDF...');
         try {
             const blob = await pdf(<QuotePDF quote={q} />).toBlob();
@@ -111,6 +115,8 @@ export function QuoteDetailsPage() {
         } catch (error) {
             console.error('Failed to generate PDF', error);
             toast.error('Failed to generate PDF', { id: toastId });
+        } finally {
+            setIsDownloading(false);
         }
     };
 
@@ -171,17 +177,27 @@ export function QuoteDetailsPage() {
                     </Link>
                     <button
                         onClick={handleDownloadPdf}
+                        disabled={isDownloading}
                         style={{
                             display: 'inline-flex', alignItems: 'center', gap: '6px',
                             height: '38px', padding: '0 16px', borderRadius: '9px', border: '1.5px solid #2563eb',
-                            background: '#eff6ff', color: '#2563eb', cursor: 'pointer', fontSize: '13px', fontWeight: '700',
-                            transition: 'background 0.15s',
+                            background: '#eff6ff', color: '#2563eb', cursor: isDownloading ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: '700',
+                            transition: 'background 0.15s, opacity 0.15s',
+                            opacity: isDownloading ? 0.7 : 1,
                         }}
-                        onMouseEnter={e => { e.currentTarget.style.background = '#dbeafe'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = '#eff6ff'; }}
+                        onMouseEnter={e => { if (!isDownloading) e.currentTarget.style.background = '#dbeafe'; }}
+                        onMouseLeave={e => { if (!isDownloading) e.currentTarget.style.background = '#eff6ff'; }}
                     >
-                        <FileText style={{ width: '14px', height: '14px' }} />
-                        Download PDF
+                        {isDownloading ? (
+                            <div style={{
+                                width: '14px', height: '14px', borderRadius: '50%',
+                                border: '2px solid #93c5fd', borderTopColor: '#2563eb',
+                                animation: 'qd-spin 0.8s linear infinite',
+                            }} />
+                        ) : (
+                            <FileText style={{ width: '14px', height: '14px' }} />
+                        )}
+                        {isDownloading ? 'Downloading...' : 'Download PDF'}
                     </button>
                     <Link to="/quote-builder" style={{ textDecoration: 'none' }}>
                         <button
@@ -312,6 +328,7 @@ export function QuoteDetailsPage() {
                                 {q.customerPhone && <InfoRow icon={<Phone style={{ width: '14px', height: '14px' }} />} value={q.customerPhone} />}
                                 {q.customerEmail && <InfoRow icon={<Mail style={{ width: '14px', height: '14px' }} />} value={q.customerEmail} />}
                                 {q.customerAddress && <InfoRow icon={<MapPin style={{ width: '14px', height: '14px' }} />} value={q.customerAddress} />}
+                                {q.systemSize != null && <InfoRow icon={<FileText style={{ width: '14px', height: '14px' }} />} value={`Base System: ${q.systemSize} kW`} />}
                             </div>
                         </div>
                     </SectionCard>

@@ -243,6 +243,7 @@ export interface Quote {
     finalAmount: number;
     status: QuoteStatus;
     notes?: string;
+    systemSize?: number;
     validUntil?: string;
     createdById: string;
     createdBy?: User;
@@ -268,6 +269,7 @@ export interface CreateQuoteDto {
     customerAddress?: string;
     discountPercentage?: number;
     notes?: string;
+    systemSize?: number;
     validUntil?: string;
     status?: QuoteStatus;
     items: CreateQuoteItemDto[];
@@ -280,4 +282,5 @@ export interface UpdateQuoteDto extends Partial<CreateQuoteDto> {
 export interface QuoteFilterDto extends FilterDto {
     status?: QuoteStatus;
     salesUserId?: string;
+    roleFilter?: 'SALES' | 'ADMIN' | 'BOTH';
 }

@@ -95,7 +95,15 @@ function DownloadQuoteBtn({ quote }: { quote: Quote }) {
 
     return (
         <IconBtn title="Download PDF" onClick={handleDownload} disabled={isGenerating}>
-            <FileText style={{ width: '14px', height: '14px', color: isGenerating ? '#94a3b8' : '#374151' }} />
+            {isGenerating ? (
+                <div style={{
+                    width: '14px', height: '14px', borderRadius: '50%',
+                    border: '2px solid #94a3b8', borderTopColor: '#374151',
+                    animation: 'qd-spin 0.8s linear infinite',
+                }} />
+            ) : (
+                <FileText style={{ width: '14px', height: '14px', color: '#374151' }} />
+            )}
         </IconBtn>
     );
 }
@@ -103,7 +111,7 @@ function DownloadQuoteBtn({ quote }: { quote: Quote }) {
 export function QuotesPage() {
     const queryClient = useQueryClient();
     const { user } = useAuth();
-    const [selectedAgentId, setSelectedAgentId] = useState<string>('');
+    const [selectedAgentId, setSelectedAgentId] = useState<string>('ALL');
     const [page, setPage] = useState(1);
     const [quoteToDelete, setQuoteToDelete] = useState<string | null>(null);
 
@@ -111,13 +119,37 @@ export function QuotesPage() {
 
     const { data: agentsData } = useQuery({
         queryKey: ['sales-agents'],
-        queryFn: () => userService.getSalesAgents({ limit: 100 }),
+        queryFn: () => userService.getSalesAgents({ limit: 100, roleFilter: 'BOTH' }),
         enabled: isAdmin,
     });
 
+    // @ts-expect-error Backend returns data.data instead of data.items for this endpoint
+    const allFetchedAccounts: User[] = agentsData?.data || agentsData?.items || [];
+    const adminAccounts = allFetchedAccounts.filter(a => a.role === UserRole.ADMIN);
+    const agentAccounts = allFetchedAccounts.filter(a => a.role === UserRole.SALES);
+
     const { data, isLoading } = useQuery({
         queryKey: ['quotes', selectedAgentId, page],
-        queryFn: () => quoteService.getAll({ salesUserId: selectedAgentId || undefined, page, limit: 10 }),
+        queryFn: () => {
+            // Handle custom role filtering system logic
+            let roleFilterPayload: 'ADMIN' | 'SALES' | 'BOTH' | undefined = undefined;
+            let userFilterPayload: string | undefined = undefined;
+
+            if (selectedAgentId === 'ONLY_ADMINS') {
+                roleFilterPayload = 'ADMIN';
+            } else if (selectedAgentId === 'ONLY_AGENTS') {
+                roleFilterPayload = 'SALES';
+            } else if (selectedAgentId !== 'ALL') {
+                userFilterPayload = selectedAgentId;
+            }
+
+            return quoteService.getAll({
+                salesUserId: userFilterPayload,
+                roleFilter: roleFilterPayload,
+                page,
+                limit: 10
+            });
+        },
         refetchOnMount: 'always',
     });
 
@@ -151,6 +183,7 @@ export function QuotesPage() {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <style>{`@keyframes qd-spin { to { transform:rotate(360deg); } }`}</style>
 
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
@@ -187,7 +220,7 @@ export function QuotesPage() {
                         <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #bfdbfe' }}>
                             <Users style={{ width: '15px', height: '15px', color: '#2563eb' }} />
                         </div>
-                        <span style={{ fontSize: '13.5px', fontWeight: '600', color: '#475569' }}>Filter by Agent:</span>
+                        <span style={{ fontSize: '13.5px', fontWeight: '600', color: '#475569' }}>Filter by Creator:</span>
                         <select
                             value={selectedAgentId}
                             onChange={e => {
@@ -204,11 +237,25 @@ export function QuotesPage() {
                             onFocus={e => { e.target.style.borderColor = '#2563eb'; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.08)'; }}
                             onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none'; }}
                         >
-                            <option value="">All Sales Agents</option>
-                            {/* @ts-expect-error Backend returns data.data instead of data.items for this endpoint */}
-                            {(agentsData?.data || agentsData?.items)?.map(agent => (
-                                <option key={agent.id} value={agent.id}>{agent.fullName || agent.email}</option>
-                            ))}
+                            <option value="ALL">All Quotes</option>
+                            <option value="ONLY_ADMINS">Created by Admins Only</option>
+                            <option value="ONLY_AGENTS">Created by Sales Agents Only</option>
+
+                            {adminAccounts.length > 0 && (
+                                <optgroup label="Admins">
+                                    {adminAccounts.map(admin => (
+                                        <option key={admin.id} value={admin.id}>{admin.fullName || admin.email}</option>
+                                    ))}
+                                </optgroup>
+                            )}
+
+                            {agentAccounts.length > 0 && (
+                                <optgroup label="Specific Agents">
+                                    {agentAccounts.map(agent => (
+                                        <option key={agent.id} value={agent.id}>{agent.fullName || agent.email}</option>
+                                    ))}
+                                </optgroup>
+                            )}
                         </select>
                     </div>
                 )}

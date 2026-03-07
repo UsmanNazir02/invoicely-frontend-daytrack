@@ -404,7 +404,9 @@ export function QuotePDF({ quote }: QuotePDFProps) {
         return m ? parseInt(m[1], 10) : 585;
     };
     const totalW = panelItems.reduce((s, i) => s + i.quantity * guessWattage(i), 0);
-    const systemCapacity = totalW > 0 ? (totalW / 1000).toFixed(1) : 'XXX';
+    const systemCapacity = quote.systemSize != null
+        ? `${quote.systemSize} kW`
+        : (totalW > 0 ? (totalW / 1000).toFixed(1) + ' kW' : 'XXX kW');
 
     // Group items
     const grouped: { category: string; items: typeof quote.items }[] = [];
@@ -425,7 +427,7 @@ export function QuotePDF({ quote }: QuotePDFProps) {
                 <CoverBg />
                 <View style={styles.coverWrapper}>
                     <Text style={styles.coverTitle}>INITIAL PROPOSAL</Text>
-                    <Text style={styles.coverSubtitle}>{systemCapacity} kW Hybrid SYSTEM</Text>
+                    <Text style={styles.coverSubtitle}>{systemCapacity} Hybrid SYSTEM</Text>
                     <Text style={styles.coverSubtext}>SOLAR POWER GENERATION SYSTEM</Text>
                 </View>
             </Page>
@@ -447,6 +449,10 @@ export function QuotePDF({ quote }: QuotePDFProps) {
                             <Text style={styles.infoLabel}>Phone:</Text>
                             <Text style={styles.infoValue}>{quote.customerPhone}</Text>
                         </View>
+                        <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>System Size:</Text>
+                            <Text style={styles.infoValue}>{systemCapacity}</Text>
+                        </View>
                     </View>
 
                     <Text style={[styles.paragraph, { marginTop: 4 }]}>Dear Sir/ Madam,</Text>
@@ -464,7 +470,7 @@ export function QuotePDF({ quote }: QuotePDFProps) {
                     <Text style={styles.paragraph}>
                         Net Metering contributes towards bringing more energy cost efficiency by exporting excess energy back to
                         the grid. Excess energy produced is environment friendly since it is green energy being produced from
-                        renewable resources. TFP's Solar System ({systemCapacity} KW Package) enables you to avail net metering
+                        renewable resources. TFP's Solar System ({systemCapacity} Package) enables you to avail net metering
                         from your electric supply company.
                     </Text>
                     <Text style={styles.paragraph}>

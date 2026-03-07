@@ -15,7 +15,7 @@ export interface UpdateSalesAgentDto {
 }
 
 export const userService = {
-    getSalesAgents: async (params?: FilterDto): Promise<PaginatedResponse<User>> => {
+    getSalesAgents: async (params?: FilterDto & { roleFilter?: 'SALES' | 'ADMIN' | 'BOTH' }): Promise<PaginatedResponse<User>> => {
         const response = await apiService.get<any>('/users/sales', params);
         // The backend returns { data: [...], page, limit, totalCount } inside response.data
         return response.data as unknown as PaginatedResponse<User>;

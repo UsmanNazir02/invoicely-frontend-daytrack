@@ -89,6 +89,61 @@ function SectionCard({
     );
 }
 
+function InlinePriceInput({ value, onChange }: { value: number; onChange: (val: number) => void }) {
+    const [localVal, setLocalVal] = useState<string>(value.toString());
+
+    useEffect(() => {
+        if (Number(localVal) !== value && localVal !== '') {
+            setLocalVal(value.toString());
+        }
+    }, [value]);
+
+    const handleBlur = () => {
+        const num = Number(localVal);
+        if (isNaN(num) || localVal === '') {
+            setLocalVal('0');
+            onChange(0);
+        } else {
+            setLocalVal(num.toString());
+            onChange(num);
+        }
+    };
+
+    return (
+        <div
+            style={{
+                display: 'inline-flex', alignItems: 'center', gap: '4px',
+                background: '#fff', border: '1.5px solid #cbd5e1', borderRadius: '6px',
+                padding: '0 8px 0 6px', height: '28px',
+                minWidth: '110px', maxWidth: '150px',
+                boxSizing: 'border-box', transition: 'border-color 0.15s, box-shadow 0.15s',
+            }}
+            onFocusCapture={e => {
+                (e.currentTarget as HTMLDivElement).style.borderColor = '#3b82f6';
+                (e.currentTarget as HTMLDivElement).style.boxShadow = '0 0 0 3px rgba(59,130,246,0.15)';
+            }}
+            onBlurCapture={e => {
+                (e.currentTarget as HTMLDivElement).style.borderColor = '#cbd5e1';
+                (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
+            }}
+        >
+            <span style={{ color: '#94a3b8', fontSize: '11px', fontWeight: '700', flexShrink: 0, userSelect: 'none' }}>Rs.</span>
+            <input
+                type="number" min="0" value={localVal}
+                onChange={e => setLocalVal(e.target.value)}
+                onBlur={handleBlur}
+                onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                style={{
+                    flex: 1, minWidth: 0, width: '100%',
+                    height: '100%', padding: '0', fontSize: '12px',
+                    border: 'none', outline: 'none',
+                    background: 'transparent', color: '#0f172a', fontWeight: '700',
+                }}
+            />
+        </div>
+    );
+}
+
 export function QuoteBuilderPage() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
@@ -99,8 +154,8 @@ export function QuoteBuilderPage() {
     const hydratedId = useRef<string | null>(null);
     const [productSearch, setProductSearch] = useState('');
     const [showInactive, setShowInactive] = useState(true);
-    const [customerInfo, setCustomerInfo] = useState({ name: '', phone: '', email: '', address: '' });
-    const [discount, setDiscount] = useState(0);
+    const [customerInfo, setCustomerInfo] = useState({ name: '', phone: '', email: '', address: '', systemSize: '' as number | '' });
+    const [discount, setDiscount] = useState<number | ''>(0);
     const [notes, setNotes] = useState('');
 
     const draftId = searchParams.get('draft');
@@ -121,7 +176,7 @@ export function QuoteBuilderPage() {
         if (hydratedId.current === draftId) return;
         hydratedId.current = draftId;
         queueMicrotask(() => {
-            setCustomerInfo({ name: draftQuote.customerName ?? '', phone: draftQuote.customerPhone ?? '', email: draftQuote.customerEmail ?? '', address: draftQuote.customerAddress ?? '' });
+            setCustomerInfo({ name: draftQuote.customerName ?? '', phone: draftQuote.customerPhone ?? '', email: draftQuote.customerEmail ?? '', address: draftQuote.customerAddress ?? '', systemSize: draftQuote.systemSize ?? '' });
             setDiscount(Number(draftQuote.discountPercentage ?? 0));
             setNotes(draftQuote.notes ?? '');
             setCart((draftQuote.items ?? []).map(item => ({
@@ -154,7 +209,8 @@ export function QuoteBuilderPage() {
 
     const { subtotal, discountAmount, total } = useMemo(() => {
         const subtotal = cart.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
-        const discountAmount = (subtotal * discount) / 100;
+        const activeDiscount = Number(discount) || 0;
+        const discountAmount = (subtotal * activeDiscount) / 100;
         return { subtotal, discountAmount, total: subtotal - discountAmount };
     }, [cart, discount]);
 
@@ -176,6 +232,9 @@ export function QuoteBuilderPage() {
     const updateQuantity = (tempId: string, delta: number) =>
         setCart(cart.map(i => i.tempId === tempId ? { ...i, quantity: Math.max(0, i.quantity + delta) } : i).filter(i => i.quantity > 0));
 
+    const updatePrice = (tempId: string, newPrice: number) =>
+        setCart(cart.map(i => i.tempId === tempId ? { ...i, unitPrice: Math.max(0, newPrice) } : i));
+
     const removeFromCart = (tempId: string) => setCart(cart.filter(i => i.tempId !== tempId));
 
     const handleSubmit = (status: QuoteStatus) => {
@@ -186,7 +245,8 @@ export function QuoteBuilderPage() {
             customerPhone: customerInfo.phone || undefined,
             customerEmail: customerInfo.email || undefined,
             customerAddress: customerInfo.address || undefined,
-            discountPercentage: discount, notes: notes || undefined, status,
+            systemSize: customerInfo.systemSize === '' ? undefined : Number(customerInfo.systemSize),
+            discountPercentage: Number(discount) || 0, notes: notes || undefined, status,
             items: cart.map(({ tempId, ...item }) => { void tempId; return item; }),
         });
     };
@@ -464,6 +524,9 @@ export function QuoteBuilderPage() {
                             <Field label="Address" icon={<MapPin style={{ width: '14px', height: '14px' }} />}>
                                 <TextInput placeholder="Enter address" value={customerInfo.address} onChange={e => setCustomerInfo({ ...customerInfo, address: e.target.value })} />
                             </Field>
+                            <Field label="System Size (kW)" icon={<FileText style={{ width: '14px', height: '14px' }} />}>
+                                <TextInput type="number" min="0" step="0.1" placeholder="e.g. 4.8" value={customerInfo.systemSize} onChange={e => setCustomerInfo({ ...customerInfo, systemSize: e.target.value === '' ? '' : Number(e.target.value) })} />
+                            </Field>
                         </div>
                     </SectionCard>
 
@@ -485,9 +548,13 @@ export function QuoteBuilderPage() {
                                     }}>
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             <p style={{ margin: '0 0 2px', fontSize: '13px', fontWeight: '700', color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.itemName}</p>
-                                            <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>
-                                                Rs. {item.unitPrice.toLocaleString()} × {item.quantity}
-                                            </p>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', margin: 0, fontSize: '12px', color: '#64748b' }}>
+                                                <InlinePriceInput
+                                                    value={item.unitPrice}
+                                                    onChange={newPrice => updatePrice(item.tempId, newPrice)}
+                                                />
+                                                <span style={{ fontWeight: '600' }}>× {item.quantity}</span>
+                                            </div>
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                             {[
@@ -520,7 +587,7 @@ export function QuoteBuilderPage() {
                                 <span style={{ fontSize: '13px', color: '#64748b' }}>Discount</span>
                                 <input
                                     type="number" min="0" max="100" value={discount}
-                                    onChange={e => setDiscount(Math.min(100, Math.max(0, Number(e.target.value))))}
+                                    onChange={e => setDiscount(e.target.value === '' ? '' : Math.min(100, Math.max(0, Number(e.target.value))))}
                                     style={{ width: '52px', height: '32px', textAlign: 'center', border: '1.5px solid #e2e8f0', borderRadius: '7px', fontSize: '13px', fontWeight: '600', outline: 'none', background: '#f8fafc' }}
                                     onFocus={e => { e.target.style.borderColor = '#2563eb'; e.target.style.background = '#fff'; }}
                                     onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.background = '#f8fafc'; }}
