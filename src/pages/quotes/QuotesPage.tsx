@@ -225,7 +225,7 @@ export function QuotesPage() {
                             value={selectedAgentId}
                             onChange={e => {
                                 setSelectedAgentId(e.target.value);
-                                setPage(1); // Reset page on filter change
+                                setPage(1);
                             }}
                             style={{
                                 height: '34px', padding: '0 12px',
@@ -238,19 +238,10 @@ export function QuotesPage() {
                             onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none'; }}
                         >
                             <option value="ALL">All Quotes</option>
-                            <option value="ONLY_ADMINS">Created by Admins Only</option>
-                            <option value="ONLY_AGENTS">Created by Sales Agents Only</option>
-
-                            {adminAccounts.length > 0 && (
-                                <optgroup label="Admins">
-                                    {adminAccounts.map(admin => (
-                                        <option key={admin.id} value={admin.id}>{admin.fullName || admin.email}</option>
-                                    ))}
-                                </optgroup>
-                            )}
-
+                            <option value="ONLY_ADMINS">Created by Admin</option>
+                            <option value="ONLY_AGENTS">Created by Sales Agents</option>
                             {agentAccounts.length > 0 && (
-                                <optgroup label="Specific Agents">
+                                <optgroup label="Filter by Agent">
                                     {agentAccounts.map(agent => (
                                         <option key={agent.id} value={agent.id}>{agent.fullName || agent.email}</option>
                                     ))}
