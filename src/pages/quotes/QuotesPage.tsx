@@ -125,7 +125,6 @@ export function QuotesPage() {
 
     // @ts-expect-error Backend returns data.data instead of data.items for this endpoint
     const allFetchedAccounts: User[] = agentsData?.data || agentsData?.items || [];
-    const adminAccounts = allFetchedAccounts.filter(a => a.role === UserRole.ADMIN);
     const agentAccounts = allFetchedAccounts.filter(a => a.role === UserRole.SALES);
 
     const { data, isLoading } = useQuery({

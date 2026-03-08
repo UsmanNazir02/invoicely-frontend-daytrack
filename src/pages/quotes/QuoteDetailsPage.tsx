@@ -72,6 +72,9 @@ export function QuoteDetailsPage() {
 
     const items = useMemo(() => quote?.items ?? [], [quote]);
 
+    // Hook must be called unconditionally before early returns
+    const [isDownloading, setIsDownloading] = useState(false);
+
     if (isLoading || !quote) {
         return (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh' }}>
@@ -94,8 +97,6 @@ export function QuoteDetailsPage() {
     const discountAmt = Number(q.discountAmount);
     const discountPct = Number(q.discountPercentage);
     const finalAmt = Number(q.finalAmount);
-
-    const [isDownloading, setIsDownloading] = useState(false);
 
     const handleDownloadPdf = async () => {
         if (isDownloading) return;

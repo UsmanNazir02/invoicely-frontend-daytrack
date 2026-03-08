@@ -686,7 +686,7 @@ export function QuotePDF({ quote }: QuotePDFProps) {
                             <View style={styles.sigLine} />
                             <Text style={styles.sigLabel}>Customer Sign</Text>
                             <View style={{ marginTop: 20 }}>
-                                {(['Name:', 'Date:', 'CNIC:'] as const).map((lbl, i) => (
+                                {(['Name:', 'Date:', 'CNIC:'] as const).map((lbl) => (
                                     <View style={styles.sigFieldRow} key={lbl}>
                                         <Text style={styles.sigFieldLabel}>{lbl}</Text>
                                         <View style={styles.sigFieldLine} />
@@ -698,7 +698,7 @@ export function QuotePDF({ quote }: QuotePDFProps) {
                             <View style={styles.sigLine} />
                             <Text style={styles.sigLabel}>Sales Representative Sign</Text>
                             <View style={{ marginTop: 20 }}>
-                                {(['Name:', 'Date:'] as const).map((lbl, i) => (
+                                {(['Name:', 'Date:'] as const).map((lbl) => (
                                     <View style={styles.sigFieldRow} key={lbl}>
                                         <Text style={styles.sigFieldLabel}>{lbl}</Text>
                                         <View style={styles.sigFieldLine} />
