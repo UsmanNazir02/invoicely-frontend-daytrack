@@ -18,7 +18,16 @@ import type {
 } from '../../types';
 import { QuoteItemType } from '../../types';
 
-interface CartItem extends CreateQuoteItemDto { tempId: string; }
+interface CartItem extends CreateQuoteItemDto {
+    tempId: string;
+    /** True when quantity/price is auto-derived from system size (locks manual controls) */
+    autoCalculated?: boolean;
+    /** Wattage stored for solar panels so recalc can happen when systemSize changes */
+    panelWattage?: number;
+    /** Base price per unit (before multiplying by systemSize) — for recalculation */
+    basePricePerUnit?: number;
+}
+
 type ProductTab = 'solar-panels' | 'inverters' | 'structures' | 'misc-items';
 
 function Field({ label, icon, children }: { label: string; icon: React.ReactNode; children: React.ReactNode }) {
@@ -66,7 +75,7 @@ function InlinePriceInput({ value, onChange }: { value: number; onChange: (val: 
         else { setLocalVal(num.toString()); onChange(num); }
     };
     return (
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#fff', border: '1.5px solid #cbd5e1', borderRadius: '6px', padding: '0 8px 0 6px', height: '28px', minWidth: '110px', maxWidth: '150px', boxSizing: 'border-box' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#fff', border: '1.5px solid #cbd5e1', borderRadius: '6px', padding: '0 8px 0 6px', height: '28px', width: '100%', boxSizing: 'border-box' }}>
             <span style={{ color: '#94a3b8', fontSize: '11px', fontWeight: '700', flexShrink: 0, userSelect: 'none' }}>Rs.</span>
             <input type="number" min="0" value={localVal}
                 onChange={e => setLocalVal(e.target.value)}
@@ -76,6 +85,35 @@ function InlinePriceInput({ value, onChange }: { value: number; onChange: (val: 
             />
         </div>
     );
+}
+
+/** Compute initial quantity and unitPrice based on item type and system size.
+ *  Solar panel: unitPrice = rate × wattage, qty = ceil(systemKW × 1000 / wattage)
+ *  Structure / Misc: unitPrice = rate × systemKW (system size already in kW)
+ *  Inverter: unitPrice = rate, qty = 1 (no auto-calc)
+ */
+function computeItemValues(
+    type: QuoteItemType,
+    basePrice: number,
+    systemSizeKW: number,
+    wattage?: number,
+): { quantity: number; unitPrice: number } {
+    switch (type) {
+        case QuoteItemType.SOLAR_PANEL: {
+            const qty = wattage && wattage > 0
+                ? Math.ceil((systemSizeKW * 1000) / wattage)
+                : 1;
+            const unitPrice = wattage && wattage > 0 ? basePrice * wattage : basePrice;
+            return { quantity: qty, unitPrice };
+        }
+        case QuoteItemType.STRUCTURE:
+            return { quantity: 1, unitPrice: basePrice * systemSizeKW * 1000 };
+        case QuoteItemType.MISC_ITEM:
+            return { quantity: 1, unitPrice: basePrice * systemSizeKW * 1000 };
+        case QuoteItemType.INVERTER:
+        default:
+            return { quantity: 1, unitPrice: basePrice };
+    }
 }
 
 export function QuoteBuilderPage() {
@@ -88,7 +126,8 @@ export function QuoteBuilderPage() {
     const hydratedId = useRef<string | null>(null);
     const [productSearch, setProductSearch] = useState('');
     const [showInactive, setShowInactive] = useState(true);
-    const [customerInfo, setCustomerInfo] = useState({ name: '', phone: '', email: '', address: '', systemSize: '' as number | '' });
+    const [customerInfo, setCustomerInfo] = useState({ name: '', phone: '', email: '', address: '' });
+    const [systemSize, setSystemSize] = useState<number | ''>('');
     const [customerInfoExpanded, setCustomerInfoExpanded] = useState(false);
     const [discount, setDiscount] = useState<number | ''>(0);
     const [notes, setNotes] = useState('');
@@ -107,11 +146,13 @@ export function QuoteBuilderPage() {
 
     const editingQuoteId = draftQuote?.id ?? null;
 
+    // Hydrate draft quote
     useEffect(() => {
         if (!draftId || !draftQuote || hydratedId.current === draftId) return;
         hydratedId.current = draftId;
         queueMicrotask(() => {
-            setCustomerInfo({ name: draftQuote.customerName ?? '', phone: draftQuote.customerPhone ?? '', email: draftQuote.customerEmail ?? '', address: draftQuote.customerAddress ?? '', systemSize: draftQuote.systemSize ?? '' });
+            setCustomerInfo({ name: draftQuote.customerName ?? '', phone: draftQuote.customerPhone ?? '', email: draftQuote.customerEmail ?? '', address: draftQuote.customerAddress ?? '' });
+            setSystemSize(draftQuote.systemSize ?? '');
             setDiscount(Number(draftQuote.discountPercentage ?? 0));
             setNotes(draftQuote.notes ?? '');
             setCart((draftQuote.items ?? []).map(item => ({
@@ -119,9 +160,13 @@ export function QuoteBuilderPage() {
                 itemType: item.itemType, itemId: item.itemId, itemName: item.itemName,
                 itemDescription: item.itemDescription, unitPrice: Number(item.unitPrice),
                 quantity: Number(item.quantity), brandName: item.brandName,
+                // Mark auto-calculated items from draft (non-inverter = locked)
+                autoCalculated: item.itemType !== QuoteItemType.INVERTER,
             })));
         });
     }, [draftId, draftQuote]);
+
+    // No systemSize-based auto-recalc; values are calculated once on add and remain freely editable.
 
     const saveQuoteMutation = useMutation({
         mutationFn: async (payload: Parameters<typeof quoteService.create>[0]) => {
@@ -150,17 +195,43 @@ export function QuoteBuilderPage() {
     }, [cart, discount]);
 
     const addToCart = (item: SolarPanel | Inverter | Structure | MiscItem, type: QuoteItemType, brandName?: string) => {
-        const existing = cart.find(c => c.itemId === item.id && c.itemType === type);
-        if (existing) {
-            setCart(cart.map(c => c.tempId === existing.tempId ? { ...c, quantity: c.quantity + 1 } : c));
-        } else {
-            setCart([...cart, {
-                tempId: `${item.id}-${type}-${tempIdSeq.current++}`,
-                itemType: type, itemId: item.id,
-                itemName: 'model' in item ? item.model : 'name' in item ? item.name : (item as Structure).type,
-                itemDescription: item.description, unitPrice: Number(item.price), quantity: 1, brandName,
-            }]);
+        const kw = Number(systemSize);
+
+        // Require system size for non-inverter items
+        if (type !== QuoteItemType.INVERTER && (!kw || kw <= 0)) {
+            toast.error('Please enter System Size (kW) first');
+            return;
         }
+
+        // Solar panel must have wattage
+        if (type === QuoteItemType.SOLAR_PANEL) {
+            const panel = item as SolarPanel;
+            if (!panel.wattage || panel.wattage <= 0) {
+                toast.error('This solar panel has no wattage set — cannot calculate quantity');
+                return;
+            }
+        }
+
+        const basePrice = Number(item.price);
+        const wattage = type === QuoteItemType.SOLAR_PANEL ? (item as SolarPanel).wattage : undefined;
+        const { quantity, unitPrice } = computeItemValues(type, basePrice, kw, wattage);
+
+        const name = 'model' in item ? item.model : 'name' in item ? item.name : (item as Structure).type;
+
+        // Inverters: bump quantity if already in cart
+        const existing = cart.find(c => c.itemId === item.id && c.itemType === type);
+        if (existing && type === QuoteItemType.INVERTER) {
+            setCart(cart.map(c => c.tempId === existing.tempId ? { ...c, quantity: c.quantity + 1 } : c));
+            toast.success('Added to quote');
+            return;
+        }
+
+        setCart([...cart, {
+            tempId: `${item.id}-${type}-${tempIdSeq.current++}`,
+            itemType: type, itemId: item.id,
+            itemName: name,
+            itemDescription: item.description, unitPrice, quantity, brandName,
+        }]);
         toast.success('Added to quote');
     };
 
@@ -178,9 +249,12 @@ export function QuoteBuilderPage() {
             customerPhone: customerInfo.phone || undefined,
             customerEmail: customerInfo.email || undefined,
             customerAddress: customerInfo.address || undefined,
-            systemSize: customerInfo.systemSize === '' ? undefined : Number(customerInfo.systemSize),
+            systemSize: systemSize === '' ? undefined : Number(systemSize),
             discountPercentage: Number(discount) || 0, notes: notes || undefined, status,
-            items: cart.map(({ tempId, ...item }) => { void tempId; return item; }),
+            items: cart.map(({ tempId, autoCalculated, panelWattage, basePricePerUnit, ...item }) => {
+                void tempId; void autoCalculated; void panelWattage; void basePricePerUnit;
+                return item;
+            }),
         });
     };
 
@@ -202,9 +276,12 @@ export function QuoteBuilderPage() {
     const visibleStructs = useMemo(() => { const b = showInactive ? structs : structs.filter((s: Structure) => s.isActive); return ns ? b.filter((s: Structure) => `${s.type} ${s.description ?? ''}`.toLowerCase().includes(ns)) : b; }, [structs, showInactive, ns]);
     const visibleMisc = useMemo(() => { const b = showInactive ? miscList : miscList.filter((m: MiscItem) => m.isActive); return ns ? b.filter((m: MiscItem) => `${m.name} ${m.type}`.toLowerCase().includes(ns)) : b; }, [miscList, showInactive, ns]);
 
-    const ProductCard = ({ icon, title, sub, badge, badgeVariant, price, onAdd, active }: {
+    const kw = Number(systemSize);
+
+    const ProductCard = ({ icon, title, sub, badge, badgeVariant, price, onAdd, active, hint }: {
         icon: React.ReactNode; title: string; sub?: string; badge?: string;
         badgeVariant?: 'info' | 'success' | 'default'; price: number; onAdd: () => void; active: boolean;
+        hint?: string;
     }) => (
         <div style={{
             padding: '14px', borderRadius: '12px', border: '1.5px solid #f1f5f9',
@@ -223,6 +300,11 @@ export function QuoteBuilderPage() {
                     {sub && <p style={{ margin: '0 0 3px', fontSize: '12px', color: '#64748b' }}>{sub}</p>}
                     {badge && <Badge variant={badgeVariant || 'default'} size="sm">{badge}</Badge>}
                     {!active && <Badge variant="default" size="sm">Inactive</Badge>}
+                    {hint && (
+                        <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#2563eb', fontWeight: '600', background: '#eff6ff', borderRadius: '5px', padding: '2px 6px', display: 'inline-block' }}>
+                            {hint}
+                        </p>
+                    )}
                 </div>
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
                     <p style={{ margin: '0 0 6px', fontSize: '14px', fontWeight: '800', color: '#0f172a', whiteSpace: 'nowrap' }}>
@@ -259,13 +341,6 @@ export function QuoteBuilderPage() {
                 .qb-tabs { scrollbar-width: none; }
             `}</style>
 
-            {/*
-              OUTER WRAPPER
-              ─────────────
-              height: 100% fills the content area that the page layout provides.
-              overflow: hidden ensures the PAGE itself never scrolls.
-              Only the two inner panels scroll independently.
-            */}
             <div style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -278,7 +353,7 @@ export function QuoteBuilderPage() {
                         {editingQuoteId ? 'Edit Draft Quote' : 'Quote Builder'}
                     </h1>
                     <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
-                        {editingQuoteId ? 'Update your draft and finalise when ready' : 'Create a new quote by selecting products'}
+                        {editingQuoteId ? 'Update your draft and finalise when ready' : 'Enter system size first, then add products'}
                     </p>
                 </div>
 
@@ -311,12 +386,7 @@ export function QuoteBuilderPage() {
                     </div>
                 )}
 
-                {/*
-                  TWO-COLUMN LAYOUT
-                  ─────────────────
-                  flex: 1 + minHeight: 0 → fills remaining height AND allows children to scroll.
-                  Without minHeight:0, flex children ignore the height constraint and overflow.
-                */}
+                {/* TWO-COLUMN LAYOUT */}
                 <div style={{
                     flex: 1,
                     minHeight: 0,
@@ -334,7 +404,7 @@ export function QuoteBuilderPage() {
                         minHeight: 0,
                         minWidth: 0,
                     }}>
-                        {/* Tab bar — pinned, never scrolls */}
+                        {/* Tab bar */}
                         <div className="qb-tabs" style={{
                             flexShrink: 0,
                             display: 'flex', gap: '3px', padding: '4px',
@@ -358,7 +428,7 @@ export function QuoteBuilderPage() {
                             ))}
                         </div>
 
-                        {/* Search + toggle — pinned, never scrolls */}
+                        {/* Search + toggle */}
                         <div style={{ flexShrink: 0, display: 'flex', gap: '8px', alignItems: 'center' }}>
                             <div style={{ position: 'relative', flex: 1 }}>
                                 <Search style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', width: '14px', height: '14px', color: '#9ca3af', pointerEvents: 'none' }} />
@@ -381,10 +451,7 @@ export function QuoteBuilderPage() {
                             </button>
                         </div>
 
-                        {/*
-                          Product grid — scrollable area.
-                          flex:1 + minHeight:0 = fills remaining space in the column and scrolls.
-                        */}
+                        {/* Product grid */}
                         <div className="qb-panel" style={{
                             flex: 1,
                             minHeight: 0,
@@ -400,27 +467,41 @@ export function QuoteBuilderPage() {
                                 const items: React.ReactNode[] = [];
                                 if (activeTab === 'solar-panels') {
                                     if (!visiblePanels.length) return <EmptyState text="No solar panels found" />;
-                                    visiblePanels.forEach((p: SolarPanel) => items.push(<ProductCard key={p.id} active={p.isActive} icon={<Sun style={{ width: '14px', height: '14px', color: '#ca8a04' }} />} title={p.model} sub={p.brand?.name} badge={p.wattage ? `${p.wattage}W` : undefined} badgeVariant="info" price={Number(p.price)} onAdd={() => addToCart(p, QuoteItemType.SOLAR_PANEL, p.brand?.name)} />));
+                                    visiblePanels.forEach((p: SolarPanel) => {
+                                        const panelQty = kw > 0 && p.wattage && p.wattage > 0
+                                            ? Math.ceil((kw * 1000) / p.wattage)
+                                            : null;
+                                        const hint = panelQty !== null
+                                            ? `${panelQty} panels needed for ${kw} kW`
+                                            : kw > 0 && (!p.wattage || p.wattage <= 0)
+                                                ? 'No wattage — cannot auto-calculate'
+                                                : undefined;
+                                        items.push(<ProductCard key={p.id} active={p.isActive} icon={<Sun style={{ width: '14px', height: '14px', color: '#ca8a04' }} />} title={p.model} sub={p.brand?.name} badge={p.wattage ? `${p.wattage}W` : undefined} badgeVariant="info" price={Number(p.price)} onAdd={() => addToCart(p, QuoteItemType.SOLAR_PANEL, p.brand?.name)} hint={hint} />);
+                                    });
                                 } else if (activeTab === 'inverters') {
                                     if (!visibleInvs.length) return <EmptyState text="No inverters found" />;
                                     visibleInvs.forEach((i: Inverter) => items.push(<ProductCard key={i.id} active={i.isActive} icon={<Zap style={{ width: '14px', height: '14px', color: '#16a34a' }} />} title={i.model} sub={i.brand?.name} badge={i.capacity || undefined} badgeVariant="success" price={Number(i.price)} onAdd={() => addToCart(i, QuoteItemType.INVERTER, i.brand?.name)} />));
                                 } else if (activeTab === 'structures') {
                                     if (!visibleStructs.length) return <EmptyState text="No structures found" />;
-                                    visibleStructs.forEach((s: Structure) => items.push(<ProductCard key={s.id} active={s.isActive} icon={<Building style={{ width: '14px', height: '14px', color: '#7c3aed' }} />} title={s.type.replace(/_/g, ' ')} sub={s.description || undefined} price={Number(s.price)} onAdd={() => addToCart(s, QuoteItemType.STRUCTURE)} />));
+                                    visibleStructs.forEach((s: Structure) => {
+                                        const effectivePrice = kw > 0 ? s.price * kw : s.price;
+                                        const hint = kw > 0 ? `Rs. ${(s.price * kw).toLocaleString()} for ${kw} kW` : undefined;
+                                        items.push(<ProductCard key={s.id} active={s.isActive} icon={<Building style={{ width: '14px', height: '14px', color: '#7c3aed' }} />} title={s.type.replace(/_/g, ' ')} sub={s.description || undefined} price={Number(effectivePrice)} onAdd={() => addToCart(s, QuoteItemType.STRUCTURE)} hint={hint} />);
+                                    });
                                 } else {
                                     if (!visibleMisc.length) return <EmptyState text="No misc items found" />;
-                                    visibleMisc.forEach((m: MiscItem) => items.push(<ProductCard key={m.id} active={m.isActive} icon={<Package style={{ width: '14px', height: '14px', color: '#ea580c' }} />} title={m.name} sub={m.unit ? `per ${m.unit}` : undefined} badge={m.type.replace(/_/g, ' ')} price={Number(m.price)} onAdd={() => addToCart(m, QuoteItemType.MISC_ITEM)} />));
+                                    visibleMisc.forEach((m: MiscItem) => {
+                                        const effectivePrice = kw > 0 ? m.price * kw : m.price;
+                                        const hint = kw > 0 ? `Rs. ${(m.price * kw).toLocaleString()} for ${kw} kW` : undefined;
+                                        items.push(<ProductCard key={m.id} active={m.isActive} icon={<Package style={{ width: '14px', height: '14px', color: '#ea580c' }} />} title={m.name} sub={m.unit ? `per ${m.unit}` : undefined} badge={m.type.replace(/_/g, ' ')} price={Number(effectivePrice)} onAdd={() => addToCart(m, QuoteItemType.MISC_ITEM)} hint={hint} />);
+                                    });
                                 }
                                 return <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '10px' }}>{items}</div>;
                             })()}
                         </div>
                     </div>
 
-                    {/* ════ RIGHT PANEL ════
-                        Entire right column scrolls as one unit via overflowY:auto.
-                        minHeight:0 is essential so it respects the grid row height.
-                        All content — customer info, items, pricing, buttons — is reachable by scrolling.
-                    */}
+                    {/* ════ RIGHT PANEL ════ */}
                     <div className="qb-panel" style={{
                         overflowY: 'auto',
                         minHeight: 0,
@@ -430,6 +511,57 @@ export function QuoteBuilderPage() {
                         paddingRight: '2px',
                         paddingBottom: '12px',
                     }}>
+
+                        {/* ── System Size — top-level prominent field ── */}
+                        <div style={{
+                            background: systemSize ? 'linear-gradient(135deg, #eff6ff, #f0fdf4)' : '#fff8ed',
+                            border: `1.5px solid ${systemSize ? '#bfdbfe' : '#fcd34d'}`,
+                            borderRadius: '14px',
+                            padding: '14px 15px',
+                            flexShrink: 0,
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                                <span style={{ fontSize: '18px' }}>⚡</span>
+                                <span style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>System Size</span>
+                                <span style={{ fontSize: '11px', fontWeight: '700', color: '#dc2626', background: '#fff1f2', border: '1px solid #fecaca', borderRadius: '6px', padding: '1px 7px', marginLeft: 'auto' }}>
+                                    Required first
+                                </span>
+                            </div>
+                            <div style={{ position: 'relative' }}>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="0.1"
+                                    placeholder="e.g. 5"
+                                    value={systemSize}
+                                    onChange={e => setSystemSize(e.target.value === '' ? '' : Number(e.target.value))}
+                                    style={{
+                                        width: '100%', height: '44px',
+                                        paddingLeft: '14px', paddingRight: '52px',
+                                        fontSize: '18px', fontWeight: '800', color: '#0f172a',
+                                        background: '#fff', border: `2px solid ${systemSize ? '#2563eb' : '#fbbf24'}`,
+                                        borderRadius: '10px', outline: 'none', boxSizing: 'border-box',
+                                        transition: 'border-color 0.15s, box-shadow 0.15s',
+                                    }}
+                                    onFocus={e => { e.target.style.borderColor = '#2563eb'; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.1)'; }}
+                                    onBlur={e => { e.target.style.borderColor = systemSize ? '#2563eb' : '#fbbf24'; e.target.style.boxShadow = 'none'; }}
+                                />
+                                <span style={{
+                                    position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)',
+                                    fontSize: '14px', fontWeight: '700', color: '#64748b', pointerEvents: 'none',
+                                }}>kW</span>
+                            </div>
+                            {systemSize && (
+                                <p style={{ margin: '8px 0 0', fontSize: '12px', color: '#16a34a', fontWeight: '600' }}>
+                                    ✓ {Number(systemSize)} kW — item quantities & prices auto-calculated
+                                </p>
+                            )}
+                            {!systemSize && (
+                                <p style={{ margin: '8px 0 0', fontSize: '12px', color: '#92400e', fontWeight: '500' }}>
+                                    Set system size to auto-calculate panel qty, structure & misc prices
+                                </p>
+                            )}
+                        </div>
 
                         {/* ── Customer Information ── */}
                         <div style={{ background: '#fff', border: '1px solid #f1f5f9', borderRadius: '14px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', flexShrink: 0, overflow: 'hidden' }}>
@@ -475,9 +607,6 @@ export function QuoteBuilderPage() {
                                     <Field label="Address" icon={<MapPin style={{ width: '13px', height: '13px' }} />}>
                                         <TextInput placeholder="Enter address" value={customerInfo.address} onChange={e => setCustomerInfo({ ...customerInfo, address: e.target.value })} />
                                     </Field>
-                                    <Field label="System Size (kW)" icon={<FileText style={{ width: '13px', height: '13px' }} />}>
-                                        <TextInput type="number" min="0" step="0.1" placeholder="e.g. 4.8" value={customerInfo.systemSize} onChange={e => setCustomerInfo({ ...customerInfo, systemSize: e.target.value === '' ? '' : Number(e.target.value) })} />
-                                    </Field>
                                 </div>
                             )}
                         </div>
@@ -500,34 +629,55 @@ export function QuoteBuilderPage() {
                                 <div style={{ textAlign: 'center', padding: '24px 16px', color: '#94a3b8' }}>
                                     <FileText style={{ width: '32px', height: '32px', margin: '0 auto 8px', opacity: 0.35 }} />
                                     <p style={{ margin: '0 0 3px', fontSize: '13px', fontWeight: '600' }}>No items added yet</p>
-                                    <p style={{ margin: 0, fontSize: '12px' }}>Select products from the left panel</p>
+                                    <p style={{ margin: 0, fontSize: '12px' }}>Set system size, then select products</p>
                                 </div>
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', padding: '12px 14px' }}>
                                     {cart.map(item => (
                                         <div key={item.tempId} style={{
-                                            display: 'flex', alignItems: 'center', gap: '8px',
-                                            padding: '9px 11px', borderRadius: '9px',
-                                            background: '#f8fafc', border: '1px solid #f1f5f9',
+                                            padding: '10px 12px', borderRadius: '10px',
+                                            background: '#fafafa', border: '1px solid #f1f5f9',
+                                            display: 'flex', flexDirection: 'column', gap: '8px',
                                         }}>
-                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                <p style={{ margin: '0 0 3px', fontSize: '12.5px', fontWeight: '700', color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.itemName}</p>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                    <InlinePriceInput value={item.unitPrice} onChange={newPrice => updatePrice(item.tempId, newPrice)} />
-                                                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#64748b' }}>× {item.quantity}</span>
-                                                </div>
+                                            {/* Row 1 – name + delete */}
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                                                <p style={{ margin: 0, fontSize: '13px', fontWeight: '700', color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                    {item.itemName}
+                                                </p>
+                                                <button
+                                                    onClick={() => removeFromCart(item.tempId)}
+                                                    style={{ flexShrink: 0, width: '22px', height: '22px', borderRadius: '6px', border: '1px solid #fecaca', background: '#fff1f2', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#dc2626' }}
+                                                >
+                                                    <Trash2 style={{ width: '10px', height: '10px' }} />
+                                                </button>
                                             </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
-                                                <button onClick={() => updateQuantity(item.tempId, -1)} style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#374151' }}>
-                                                    <Minus style={{ width: '11px', height: '11px' }} />
-                                                </button>
-                                                <span style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a', minWidth: '18px', textAlign: 'center' }}>{item.quantity}</span>
-                                                <button onClick={() => updateQuantity(item.tempId, +1)} style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#374151' }}>
-                                                    <Plus style={{ width: '11px', height: '11px' }} />
-                                                </button>
-                                                <button onClick={() => removeFromCart(item.tempId)} style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1px solid #fecaca', background: '#fff1f2', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#dc2626', marginLeft: '2px' }}>
-                                                    <Trash2 style={{ width: '11px', height: '11px' }} />
-                                                </button>
+                                            {/* Row 2 – unit price | qty stepper | line total */}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                {/* Unit price */}
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <p style={{ margin: '0 0 3px', fontSize: '10px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Unit Price</p>
+                                                    <InlinePriceInput value={item.unitPrice} onChange={newPrice => updatePrice(item.tempId, newPrice)} />
+                                                </div>
+                                                {/* Qty stepper */}
+                                                <div style={{ flexShrink: 0 }}>
+                                                    <p style={{ margin: '0 0 3px', fontSize: '10px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.4px', textAlign: 'center' }}>Qty</p>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                        <button onClick={() => updateQuantity(item.tempId, -1)} style={{ width: '22px', height: '22px', borderRadius: '5px', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#374151' }}>
+                                                            <Minus style={{ width: '10px', height: '10px' }} />
+                                                        </button>
+                                                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a', minWidth: '22px', textAlign: 'center' }}>{item.quantity}</span>
+                                                        <button onClick={() => updateQuantity(item.tempId, +1)} style={{ width: '22px', height: '22px', borderRadius: '5px', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#374151' }}>
+                                                            <Plus style={{ width: '10px', height: '10px' }} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                {/* Line total */}
+                                                <div style={{ flexShrink: 0, textAlign: 'right' }}>
+                                                    <p style={{ margin: '0 0 3px', fontSize: '10px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Total</p>
+                                                    <p style={{ margin: 0, fontSize: '13px', fontWeight: '800', color: '#2563eb', whiteSpace: 'nowrap' }}>
+                                                        Rs. {(item.unitPrice * item.quantity).toLocaleString()}
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
