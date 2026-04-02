@@ -484,16 +484,22 @@ export function QuoteBuilderPage() {
                                 } else if (activeTab === 'structures') {
                                     if (!visibleStructs.length) return <EmptyState text="No structures found" />;
                                     visibleStructs.forEach((s: Structure) => {
-                                        const effectivePrice = kw > 0 ? s.price * kw : s.price;
-                                        const hint = kw > 0 ? `Rs. ${(s.price * kw).toLocaleString()} for ${kw} kW` : undefined;
-                                        items.push(<ProductCard key={s.id} active={s.isActive} icon={<Building style={{ width: '14px', height: '14px', color: '#7c3aed' }} />} title={s.type.replace(/_/g, ' ')} sub={s.description || undefined} price={Number(effectivePrice)} onAdd={() => addToCart(s, QuoteItemType.STRUCTURE)} hint={hint} />);
+                                        // Always show base price; hint shows computed total (base × kW × 1000)
+                                        const computedTotal = kw > 0 ? s.price * kw * 1000 : null;
+                                        const hint = computedTotal !== null
+                                            ? `Total: Rs. ${computedTotal.toLocaleString()} (${s.price} × ${kw}kW × 1000W)`
+                                            : undefined;
+                                        items.push(<ProductCard key={s.id} active={s.isActive} icon={<Building style={{ width: '14px', height: '14px', color: '#7c3aed' }} />} title={s.type.replace(/_/g, ' ')} sub={s.description || undefined} price={Number(s.price)} onAdd={() => addToCart(s, QuoteItemType.STRUCTURE)} hint={hint} />);
                                     });
                                 } else {
                                     if (!visibleMisc.length) return <EmptyState text="No misc items found" />;
                                     visibleMisc.forEach((m: MiscItem) => {
-                                        const effectivePrice = kw > 0 ? m.price * kw : m.price;
-                                        const hint = kw > 0 ? `Rs. ${(m.price * kw).toLocaleString()} for ${kw} kW` : undefined;
-                                        items.push(<ProductCard key={m.id} active={m.isActive} icon={<Package style={{ width: '14px', height: '14px', color: '#ea580c' }} />} title={m.name} sub={m.unit ? `per ${m.unit}` : undefined} badge={m.type.replace(/_/g, ' ')} price={Number(effectivePrice)} onAdd={() => addToCart(m, QuoteItemType.MISC_ITEM)} hint={hint} />);
+                                        // Always show base price; hint shows computed total (base × kW × 1000)
+                                        const computedTotal = kw > 0 ? m.price * kw * 1000 : null;
+                                        const hint = computedTotal !== null
+                                            ? `Total: Rs. ${computedTotal.toLocaleString()} (${m.price} × ${kw}kW × 1000W)`
+                                            : undefined;
+                                        items.push(<ProductCard key={m.id} active={m.isActive} icon={<Package style={{ width: '14px', height: '14px', color: '#ea580c' }} />} title={m.name} sub={m.unit ? `per ${m.unit}` : undefined} badge={m.type.replace(/_/g, ' ')} price={Number(m.price)} onAdd={() => addToCart(m, QuoteItemType.MISC_ITEM)} hint={hint} />);
                                     });
                                 }
                                 return <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '10px' }}>{items}</div>;
