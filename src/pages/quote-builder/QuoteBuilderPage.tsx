@@ -109,7 +109,7 @@ function computeItemValues(
         case QuoteItemType.STRUCTURE:
             return { quantity: 1, unitPrice: basePrice * systemSizeKW * 1000 };
         case QuoteItemType.MISC_ITEM:
-            return { quantity: 1, unitPrice: basePrice * systemSizeKW * 1000 };
+            return { quantity: 1, unitPrice: basePrice };
         case QuoteItemType.INVERTER:
         default:
             return { quantity: 1, unitPrice: basePrice };
@@ -494,12 +494,7 @@ export function QuoteBuilderPage() {
                                 } else {
                                     if (!visibleMisc.length) return <EmptyState text="No misc items found" />;
                                     visibleMisc.forEach((m: MiscItem) => {
-                                        // Always show base price; hint shows computed total (base × kW × 1000)
-                                        const computedTotal = kw > 0 ? m.price * kw * 1000 : null;
-                                        const hint = computedTotal !== null
-                                            ? `Total: Rs. ${computedTotal.toLocaleString()} (${m.price} × ${kw}kW × 1000W)`
-                                            : undefined;
-                                        items.push(<ProductCard key={m.id} active={m.isActive} icon={<Package style={{ width: '14px', height: '14px', color: '#ea580c' }} />} title={m.name} sub={m.unit ? `per ${m.unit}` : undefined} badge={m.type.replace(/_/g, ' ')} price={Number(m.price)} onAdd={() => addToCart(m, QuoteItemType.MISC_ITEM)} hint={hint} />);
+                                        items.push(<ProductCard key={m.id} active={m.isActive} icon={<Package style={{ width: '14px', height: '14px', color: '#ea580c' }} />} title={m.name} sub={m.unit ? `per ${m.unit}` : undefined} badge={m.type.replace(/_/g, ' ')} price={Number(m.price)} onAdd={() => addToCart(m, QuoteItemType.MISC_ITEM)} />);
                                     });
                                 }
                                 return <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '10px' }}>{items}</div>;
