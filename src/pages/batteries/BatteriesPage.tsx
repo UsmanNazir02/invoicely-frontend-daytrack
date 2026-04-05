@@ -17,6 +17,7 @@ const batterySchema = z.object({
     isActive: z.boolean().optional(),
 });
 type BatteryFormData = z.infer<typeof batterySchema>;
+type BatteryFormValues = z.input<typeof batterySchema>;
 
 type BadgeCfg = { bg: string; color: string; border: string };
 const activeCfg: BadgeCfg = { bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' };
@@ -118,7 +119,7 @@ export function BatteriesPage() {
         onError: () => toast.error('Failed to delete battery'),
     });
 
-    const { register, handleSubmit, reset, formState: { errors } } = useForm<BatteryFormData>({ resolver: zodResolver(batterySchema) });
+    const { register, handleSubmit, reset, formState: { errors } } = useForm<BatteryFormValues, unknown, BatteryFormData>({ resolver: zodResolver(batterySchema) });
 
     const openCreateModal = () => { setEditingItem(null); reset({ name: '', capacity: '', price: 0, description: '', isActive: true }); setIsModalOpen(true); };
     const openEditModal = (item: Battery) => { setEditingItem(item); reset({ name: item.name, capacity: item.capacity || '', price: item.price, description: item.description || '', isActive: item.isActive }); setIsModalOpen(true); };

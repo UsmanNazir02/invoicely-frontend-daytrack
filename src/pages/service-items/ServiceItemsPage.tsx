@@ -17,6 +17,7 @@ const serviceItemSchema = z.object({
     isActive: z.boolean().optional(),
 });
 type ServiceItemFormData = z.infer<typeof serviceItemSchema>;
+type ServiceItemFormValues = z.input<typeof serviceItemSchema>;
 
 type BadgeCfg = { bg: string; color: string; border: string };
 const activeCfg: BadgeCfg = { bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' };
@@ -118,7 +119,7 @@ export function ServiceItemsPage() {
         onError: () => toast.error('Failed to delete service item'),
     });
 
-    const { register, handleSubmit, reset, formState: { errors } } = useForm<ServiceItemFormData>({ resolver: zodResolver(serviceItemSchema) });
+    const { register, handleSubmit, reset, formState: { errors } } = useForm<ServiceItemFormValues, unknown, ServiceItemFormData>({ resolver: zodResolver(serviceItemSchema) });
 
     const openCreateModal = () => { setEditingItem(null); reset({ name: '', price: 0, unit: '', description: '', isActive: true }); setIsModalOpen(true); };
     const openEditModal = (item: ServiceItem) => { setEditingItem(item); reset({ name: item.name, price: item.price, unit: item.unit || '', description: item.description || '', isActive: item.isActive }); setIsModalOpen(true); };

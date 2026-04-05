@@ -479,11 +479,11 @@ export function QuoteBuilderPage() {
                             {(() => {
                                 const loading = activeTab === 'solar-panels' ? loadingPanels
                                     : activeTab === 'inverters' ? loadingInverters
-                                    : activeTab === 'structures' ? loadingStructures
-                                    : activeTab === 'misc-items' ? loadingMiscItems
-                                    : activeTab === 'batteries' ? loadingBatteries
-                                    : activeTab === 'service-items' ? loadingServiceItems
-                                    : loadingElectricalItems;
+                                        : activeTab === 'structures' ? loadingStructures
+                                            : activeTab === 'misc-items' ? loadingMiscItems
+                                                : activeTab === 'batteries' ? loadingBatteries
+                                                    : activeTab === 'service-items' ? loadingServiceItems
+                                                        : loadingElectricalItems;
                                 if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px', color: '#94a3b8', fontSize: '14px' }}>Loading…</div>;
 
                                 const items: React.ReactNode[] = [];

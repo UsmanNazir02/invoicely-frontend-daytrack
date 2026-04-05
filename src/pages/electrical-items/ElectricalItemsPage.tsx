@@ -17,6 +17,7 @@ const electricalItemSchema = z.object({
     isActive: z.boolean().optional(),
 });
 type ElectricalItemFormData = z.infer<typeof electricalItemSchema>;
+type ElectricalItemFormValues = z.input<typeof electricalItemSchema>;
 
 type BadgeCfg = { bg: string; color: string; border: string };
 const activeCfg: BadgeCfg = { bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' };
@@ -118,7 +119,7 @@ export function ElectricalItemsPage() {
         onError: () => toast.error('Failed to delete electrical item'),
     });
 
-    const { register, handleSubmit, reset, formState: { errors } } = useForm<ElectricalItemFormData>({ resolver: zodResolver(electricalItemSchema) });
+    const { register, handleSubmit, reset, formState: { errors } } = useForm<ElectricalItemFormValues, unknown, ElectricalItemFormData>({ resolver: zodResolver(electricalItemSchema) });
 
     const openCreateModal = () => { setEditingItem(null); reset({ name: '', price: 0, unit: '', description: '', isActive: true }); setIsModalOpen(true); };
     const openEditModal = (item: ElectricalItem) => { setEditingItem(item); reset({ name: item.name, price: item.price, unit: item.unit || '', description: item.description || '', isActive: item.isActive }); setIsModalOpen(true); };
