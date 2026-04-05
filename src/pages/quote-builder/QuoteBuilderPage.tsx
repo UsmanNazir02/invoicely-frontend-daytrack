@@ -4,16 +4,17 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
     Sun, Zap, Building, Package, Plus, Minus, Trash2,
     User, Phone, Mail, MapPin, FileText, Calculator,
-    Send, Save, Search, EyeOff, Pencil, ChevronDown, ChevronUp
+    Send, Save, Search, EyeOff, Pencil, ChevronDown, ChevronUp,
+    BatteryFull, Wrench, Plug,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Badge } from '../../components';
 import {
     solarPanelService, inverterService, structureService,
-    miscItemService, quoteService,
+    miscItemService, batteryService, serviceItemService, electricalItemService, quoteService,
 } from '../../services';
 import type {
-    SolarPanel, Inverter, Structure, MiscItem,
+    SolarPanel, Inverter, Structure, MiscItem, Battery, ServiceItem, ElectricalItem,
     CreateQuoteItemDto, QuoteStatus, Quote,
 } from '../../types';
 import { QuoteItemType } from '../../types';
@@ -28,7 +29,7 @@ interface CartItem extends CreateQuoteItemDto {
     basePricePerUnit?: number;
 }
 
-type ProductTab = 'solar-panels' | 'inverters' | 'structures' | 'misc-items';
+type ProductTab = 'solar-panels' | 'inverters' | 'structures' | 'misc-items' | 'batteries' | 'service-items' | 'electrical-items';
 
 function Field({ label, icon, children }: { label: string; icon: React.ReactNode; children: React.ReactNode }) {
     return (
@@ -89,8 +90,8 @@ function InlinePriceInput({ value, onChange }: { value: number; onChange: (val: 
 
 /** Compute initial quantity and unitPrice based on item type and system size.
  *  Solar panel: unitPrice = rate × wattage, qty = ceil(systemKW × 1000 / wattage)
- *  Structure / Misc: unitPrice = rate × systemKW (system size already in kW)
- *  Inverter: unitPrice = rate, qty = 1 (no auto-calc)
+ *  Structure / Service / Electrical: unitPrice = rate × systemKW × 1000
+ *  Inverter / Misc / Battery: unitPrice = rate, qty = 1 (no auto-calc)
  */
 function computeItemValues(
     type: QuoteItemType,
@@ -107,10 +108,12 @@ function computeItemValues(
             return { quantity: qty, unitPrice };
         }
         case QuoteItemType.STRUCTURE:
+        case QuoteItemType.SERVICE:
+        case QuoteItemType.ELECTRICAL:
             return { quantity: 1, unitPrice: basePrice * systemSizeKW * 1000 };
-        case QuoteItemType.MISC_ITEM:
-            return { quantity: 1, unitPrice: basePrice };
         case QuoteItemType.INVERTER:
+        case QuoteItemType.MISC_ITEM:
+        case QuoteItemType.BATTERY:
         default:
             return { quantity: 1, unitPrice: basePrice };
     }
@@ -139,6 +142,9 @@ export function QuoteBuilderPage() {
     const { data: inverters, isLoading: loadingInverters } = useQuery({ queryKey: ['inverters'], queryFn: () => inverterService.getAll() });
     const { data: structures, isLoading: loadingStructures } = useQuery({ queryKey: ['structures'], queryFn: () => structureService.getAll() });
     const { data: miscItems, isLoading: loadingMiscItems } = useQuery({ queryKey: ['misc-items'], queryFn: () => miscItemService.getAll() });
+    const { data: batteries, isLoading: loadingBatteries } = useQuery({ queryKey: ['batteries'], queryFn: () => batteryService.getAll() });
+    const { data: serviceItems, isLoading: loadingServiceItems } = useQuery({ queryKey: ['service-items'], queryFn: () => serviceItemService.getAll() });
+    const { data: electricalItems, isLoading: loadingElectricalItems } = useQuery({ queryKey: ['electrical-items'], queryFn: () => electricalItemService.getAll() });
     const { data: draftQuote, isLoading: loadingDraft } = useQuery<Quote>({
         queryKey: ['quotes', draftId], queryFn: () => quoteService.getById(draftId!),
         enabled: !!draftId, refetchOnMount: 'always',
@@ -160,8 +166,8 @@ export function QuoteBuilderPage() {
                 itemType: item.itemType, itemId: item.itemId, itemName: item.itemName,
                 itemDescription: item.itemDescription, unitPrice: Number(item.unitPrice),
                 quantity: Number(item.quantity), brandName: item.brandName,
-                // Mark auto-calculated items from draft (non-inverter = locked)
-                autoCalculated: item.itemType !== QuoteItemType.INVERTER,
+                // Mark auto-calculated items from draft (fixed-price types = not locked)
+                autoCalculated: item.itemType !== QuoteItemType.INVERTER && item.itemType !== QuoteItemType.BATTERY,
             })));
         });
     }, [draftId, draftQuote]);
@@ -194,11 +200,12 @@ export function QuoteBuilderPage() {
         return { subtotal, discountAmount, total: subtotal - discountAmount };
     }, [cart, discount]);
 
-    const addToCart = (item: SolarPanel | Inverter | Structure | MiscItem, type: QuoteItemType, brandName?: string) => {
+    const addToCart = (item: SolarPanel | Inverter | Structure | MiscItem | Battery | ServiceItem | ElectricalItem, type: QuoteItemType, brandName?: string) => {
         const kw = Number(systemSize);
 
-        // Require system size for non-inverter items
-        if (type !== QuoteItemType.INVERTER && (!kw || kw <= 0)) {
+        // Require system size for items that scale with system size
+        const fixedPriceTypes: QuoteItemType[] = [QuoteItemType.INVERTER, QuoteItemType.MISC_ITEM, QuoteItemType.BATTERY];
+        if (!fixedPriceTypes.includes(type) && (!kw || kw <= 0)) {
             toast.error('Please enter System Size (kW) first');
             return;
         }
@@ -218,9 +225,9 @@ export function QuoteBuilderPage() {
 
         const name = 'model' in item ? item.model : 'name' in item ? item.name : (item as Structure).type;
 
-        // Inverters: bump quantity if already in cart
+        // Fixed-price items (inverter, battery): bump quantity if already in cart
         const existing = cart.find(c => c.itemId === item.id && c.itemType === type);
-        if (existing && type === QuoteItemType.INVERTER) {
+        if (existing && (type === QuoteItemType.INVERTER || type === QuoteItemType.BATTERY)) {
             setCart(cart.map(c => c.tempId === existing.tempId ? { ...c, quantity: c.quantity + 1 } : c));
             toast.success('Added to quote');
             return;
@@ -263,18 +270,27 @@ export function QuoteBuilderPage() {
         { id: 'inverters' as const, label: 'Inverters', icon: Zap, color: '#16a34a' },
         { id: 'structures' as const, label: 'Structures', icon: Building, color: '#7c3aed' },
         { id: 'misc-items' as const, label: 'Misc Items', icon: Package, color: '#ea580c' },
+        { id: 'batteries' as const, label: 'Batteries', icon: BatteryFull, color: '#16a34a' },
+        { id: 'service-items' as const, label: 'Services', icon: Wrench, color: '#2563eb' },
+        { id: 'electrical-items' as const, label: 'Electrical', icon: Plug, color: '#a21caf' },
     ];
 
     const panels = useMemo(() => solarPanels?.items || (Array.isArray(solarPanels) ? solarPanels : []), [solarPanels]);
     const invs = useMemo(() => inverters?.items || (Array.isArray(inverters) ? inverters : []), [inverters]);
     const structs = useMemo(() => structures?.items || (Array.isArray(structures) ? structures : []), [structures]);
     const miscList = useMemo(() => miscItems?.items || (Array.isArray(miscItems) ? miscItems : []), [miscItems]);
+    const batteryList = useMemo(() => batteries?.items || (Array.isArray(batteries) ? batteries : []), [batteries]);
+    const serviceList = useMemo(() => serviceItems?.items || (Array.isArray(serviceItems) ? serviceItems : []), [serviceItems]);
+    const electricalList = useMemo(() => electricalItems?.items || (Array.isArray(electricalItems) ? electricalItems : []), [electricalItems]);
 
     const ns = productSearch.trim().toLowerCase();
     const visiblePanels = useMemo(() => { const b = showInactive ? panels : panels.filter((p: SolarPanel) => p.isActive); return ns ? b.filter((p: SolarPanel) => `${p.model} ${p.brand?.name ?? ''}`.toLowerCase().includes(ns)) : b; }, [panels, showInactive, ns]);
     const visibleInvs = useMemo(() => { const b = showInactive ? invs : invs.filter((i: Inverter) => i.isActive); return ns ? b.filter((i: Inverter) => `${i.model} ${i.brand?.name ?? ''}`.toLowerCase().includes(ns)) : b; }, [invs, showInactive, ns]);
     const visibleStructs = useMemo(() => { const b = showInactive ? structs : structs.filter((s: Structure) => s.isActive); return ns ? b.filter((s: Structure) => `${s.type} ${s.description ?? ''}`.toLowerCase().includes(ns)) : b; }, [structs, showInactive, ns]);
     const visibleMisc = useMemo(() => { const b = showInactive ? miscList : miscList.filter((m: MiscItem) => m.isActive); return ns ? b.filter((m: MiscItem) => `${m.name} ${m.type}`.toLowerCase().includes(ns)) : b; }, [miscList, showInactive, ns]);
+    const visibleBatteries = useMemo(() => { const b = showInactive ? batteryList : batteryList.filter((b: Battery) => b.isActive); return ns ? b.filter((b: Battery) => `${b.name} ${b.capacity ?? ''}`.toLowerCase().includes(ns)) : b; }, [batteryList, showInactive, ns]);
+    const visibleServices = useMemo(() => { const b = showInactive ? serviceList : serviceList.filter((s: ServiceItem) => s.isActive); return ns ? b.filter((s: ServiceItem) => `${s.name} ${s.description ?? ''}`.toLowerCase().includes(ns)) : b; }, [serviceList, showInactive, ns]);
+    const visibleElectrical = useMemo(() => { const b = showInactive ? electricalList : electricalList.filter((e: ElectricalItem) => e.isActive); return ns ? b.filter((e: ElectricalItem) => `${e.name} ${e.description ?? ''}`.toLowerCase().includes(ns)) : b; }, [electricalList, showInactive, ns]);
 
     const kw = Number(systemSize);
 
@@ -461,7 +477,13 @@ export function QuoteBuilderPage() {
                             padding: '14px',
                         }}>
                             {(() => {
-                                const loading = activeTab === 'solar-panels' ? loadingPanels : activeTab === 'inverters' ? loadingInverters : activeTab === 'structures' ? loadingStructures : loadingMiscItems;
+                                const loading = activeTab === 'solar-panels' ? loadingPanels
+                                    : activeTab === 'inverters' ? loadingInverters
+                                    : activeTab === 'structures' ? loadingStructures
+                                    : activeTab === 'misc-items' ? loadingMiscItems
+                                    : activeTab === 'batteries' ? loadingBatteries
+                                    : activeTab === 'service-items' ? loadingServiceItems
+                                    : loadingElectricalItems;
                                 if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px', color: '#94a3b8', fontSize: '14px' }}>Loading…</div>;
 
                                 const items: React.ReactNode[] = [];
@@ -491,10 +513,33 @@ export function QuoteBuilderPage() {
                                             : undefined;
                                         items.push(<ProductCard key={s.id} active={s.isActive} icon={<Building style={{ width: '14px', height: '14px', color: '#7c3aed' }} />} title={s.type.replace(/_/g, ' ')} sub={s.description || undefined} price={Number(s.price)} onAdd={() => addToCart(s, QuoteItemType.STRUCTURE)} hint={hint} />);
                                     });
-                                } else {
+                                } else if (activeTab === 'misc-items') {
                                     if (!visibleMisc.length) return <EmptyState text="No misc items found" />;
                                     visibleMisc.forEach((m: MiscItem) => {
                                         items.push(<ProductCard key={m.id} active={m.isActive} icon={<Package style={{ width: '14px', height: '14px', color: '#ea580c' }} />} title={m.name} sub={m.unit ? `per ${m.unit}` : undefined} badge={m.type.replace(/_/g, ' ')} price={Number(m.price)} onAdd={() => addToCart(m, QuoteItemType.MISC_ITEM)} />);
+                                    });
+                                } else if (activeTab === 'batteries') {
+                                    if (!visibleBatteries.length) return <EmptyState text="No batteries found" />;
+                                    visibleBatteries.forEach((b: Battery) => {
+                                        items.push(<ProductCard key={b.id} active={b.isActive} icon={<BatteryFull style={{ width: '14px', height: '14px', color: '#16a34a' }} />} title={b.name} badge={b.capacity || undefined} badgeVariant="success" price={Number(b.price)} onAdd={() => addToCart(b, QuoteItemType.BATTERY)} />);
+                                    });
+                                } else if (activeTab === 'service-items') {
+                                    if (!visibleServices.length) return <EmptyState text="No services found" />;
+                                    visibleServices.forEach((s: ServiceItem) => {
+                                        const computedTotal = kw > 0 ? s.price * kw * 1000 : null;
+                                        const hint = computedTotal !== null
+                                            ? `Total: Rs. ${computedTotal.toLocaleString()} (${s.price} × ${kw}kW × 1000W)`
+                                            : undefined;
+                                        items.push(<ProductCard key={s.id} active={s.isActive} icon={<Wrench style={{ width: '14px', height: '14px', color: '#2563eb' }} />} title={s.name} sub={s.unit ? `per ${s.unit}` : undefined} price={Number(s.price)} onAdd={() => addToCart(s, QuoteItemType.SERVICE)} hint={hint} />);
+                                    });
+                                } else {
+                                    if (!visibleElectrical.length) return <EmptyState text="No electrical items found" />;
+                                    visibleElectrical.forEach((e: ElectricalItem) => {
+                                        const computedTotal = kw > 0 ? e.price * kw * 1000 : null;
+                                        const hint = computedTotal !== null
+                                            ? `Total: Rs. ${computedTotal.toLocaleString()} (${e.price} × ${kw}kW × 1000W)`
+                                            : undefined;
+                                        items.push(<ProductCard key={e.id} active={e.isActive} icon={<Plug style={{ width: '14px', height: '14px', color: '#a21caf' }} />} title={e.name} sub={e.unit ? `per ${e.unit}` : undefined} price={Number(e.price)} onAdd={() => addToCart(e, QuoteItemType.ELECTRICAL)} hint={hint} />);
                                     });
                                 }
                                 return <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '10px' }}>{items}</div>;

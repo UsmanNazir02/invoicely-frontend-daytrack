@@ -11,6 +11,9 @@ import {
     InvertersPage,
     StructuresPage,
     MiscItemsPage,
+    BatteriesPage,
+    ServiceItemsPage,
+    ElectricalItemsPage,
     QuoteBuilderPage,
     QuotesPage,
     QuoteDetailsPage,
@@ -54,6 +57,9 @@ export function AppRouter() {
                 <Route path="/inverters" element={<AdminRoute><AppLayout><InvertersPage /></AppLayout></AdminRoute>} />
                 <Route path="/structures" element={<AdminRoute><AppLayout><StructuresPage /></AppLayout></AdminRoute>} />
                 <Route path="/misc-items" element={<AdminRoute><AppLayout><MiscItemsPage /></AppLayout></AdminRoute>} />
+                <Route path="/batteries" element={<AdminRoute><AppLayout><BatteriesPage /></AppLayout></AdminRoute>} />
+                <Route path="/service-items" element={<AdminRoute><AppLayout><ServiceItemsPage /></AppLayout></AdminRoute>} />
+                <Route path="/electrical-items" element={<AdminRoute><AppLayout><ElectricalItemsPage /></AppLayout></AdminRoute>} />
                 <Route path="/sales-agents" element={<AdminRoute><AppLayout><SalesAgentsPage /></AppLayout></AdminRoute>} />
 
                 {/* Sales routes */}

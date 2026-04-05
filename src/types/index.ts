@@ -184,6 +184,72 @@ export interface CreateMiscItemDto {
 
 export type UpdateMiscItemDto = Partial<CreateMiscItemDto>;
 
+// Battery types
+export interface Battery {
+    id: string;
+    name: string;
+    capacity?: string;
+    price: number;
+    description?: string;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface CreateBatteryDto {
+    name: string;
+    capacity?: string;
+    price: number;
+    description?: string;
+    isActive?: boolean;
+}
+
+export type UpdateBatteryDto = Partial<CreateBatteryDto>;
+
+// Service Item types
+export interface ServiceItem {
+    id: string;
+    name: string;
+    price: number;
+    unit?: string;
+    description?: string;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface CreateServiceItemDto {
+    name: string;
+    price: number;
+    unit?: string;
+    description?: string;
+    isActive?: boolean;
+}
+
+export type UpdateServiceItemDto = Partial<CreateServiceItemDto>;
+
+// Electrical Item types
+export interface ElectricalItem {
+    id: string;
+    name: string;
+    price: number;
+    unit?: string;
+    description?: string;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface CreateElectricalItemDto {
+    name: string;
+    price: number;
+    unit?: string;
+    description?: string;
+    isActive?: boolean;
+}
+
+export type UpdateElectricalItemDto = Partial<CreateElectricalItemDto>;
+
 // Filter types
 export interface FilterDto {
     page?: number;
@@ -214,6 +280,9 @@ export const QuoteItemType = {
     INVERTER: 'inverter',
     STRUCTURE: 'structure',
     MISC_ITEM: 'misc_item',
+    BATTERY: 'battery',
+    SERVICE: 'service',
+    ELECTRICAL: 'electrical',
 } as const;
 
 export type QuoteItemType = (typeof QuoteItemType)[keyof typeof QuoteItemType];

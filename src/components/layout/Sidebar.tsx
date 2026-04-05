@@ -12,6 +12,9 @@ import {
     ChevronLeft,
     ChevronRight,
     Users,
+    BatteryFull,
+    Wrench,
+    Plug,
 } from 'lucide-react';
 import { useAuth } from '../../contexts';
 import { UserRole } from '../../types';
@@ -26,6 +29,9 @@ const adminNavigation = [
     { name: 'Inverters', href: '/inverters', icon: Zap },
     { name: 'Structures', href: '/structures', icon: Building },
     { name: 'Misc Items', href: '/misc-items', icon: Package },
+    { name: 'Batteries', href: '/batteries', icon: BatteryFull },
+    { name: 'Services', href: '/service-items', icon: Wrench },
+    { name: 'Electrical', href: '/electrical-items', icon: Plug },
 ];
 
 const salesNavigation = [

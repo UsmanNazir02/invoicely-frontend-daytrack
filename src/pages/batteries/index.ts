@@ -1,0 +1,1 @@
+export { BatteriesPage } from './BatteriesPage';

@@ -1,0 +1,1 @@
+export { ElectricalItemsPage } from './ElectricalItemsPage';

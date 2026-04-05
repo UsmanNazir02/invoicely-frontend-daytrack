@@ -5,5 +5,8 @@ export { solarPanelService } from './solar-panel.service';
 export { inverterService } from './inverter.service';
 export { structureService } from './structure.service';
 export { miscItemService } from './misc-item.service';
+export { batteryService } from './battery.service';
+export { serviceItemService } from './service-item.service';
+export { electricalItemService } from './electrical-item.service';
 export { quoteService } from './quote.service';
 export { userService } from './user.service';
