@@ -148,6 +148,7 @@ export function QuoteBuilderPage() {
     const [systemSize, setSystemSize] = useState<number | ''>('');
     const [customerInfoExpanded, setCustomerInfoExpanded] = useState(false);
     const [discount, setDiscount] = useState<number | ''>(0);
+    const [profitOverride, setProfitOverride] = useState<number | null>(null);
     const [notes, setNotes] = useState('');
 
     const cartItemCount = cart.reduce((s, i) => s + i.quantity, 0);
@@ -208,12 +209,17 @@ export function QuoteBuilderPage() {
         },
     });
 
-    const { subtotal, discountAmount, total } = useMemo(() => {
+    const { subtotal, discountAmount, baseTotal, defaultProfit, effectiveProfit, profitPct, total } = useMemo(() => {
         const subtotal = cart.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
         const activeDiscount = Number(discount) || 0;
         const discountAmount = (subtotal * activeDiscount) / 100;
-        return { subtotal, discountAmount, total: subtotal - discountAmount };
-    }, [cart, discount]);
+        const baseTotal = subtotal - discountAmount;
+        const defaultProfit = Math.round(baseTotal * 0.10);
+        const effectiveProfit = profitOverride !== null ? profitOverride : defaultProfit;
+        const profitPct = baseTotal > 0 ? (effectiveProfit / baseTotal) * 100 : 10;
+        const total = baseTotal + (effectiveProfit - defaultProfit);
+        return { subtotal, discountAmount, baseTotal, defaultProfit, effectiveProfit, profitPct, total };
+    }, [cart, discount, profitOverride]);
 
     const addToCart = (item: SolarPanel | Inverter | Structure | MiscItem | Battery | ServiceItem | ElectricalItem, type: QuoteItemType, brandName?: string) => {
         const kw = Number(systemSize);
@@ -802,6 +808,39 @@ export function QuoteBuilderPage() {
                                     />
                                     <span style={{ fontSize: '13px', color: '#64748b' }}>%</span>
                                     <span style={{ marginLeft: 'auto', fontSize: '13px', fontWeight: '600', color: '#dc2626' }}>– Rs. {discountAmount.toLocaleString()}</span>
+                                </div>
+                                <div style={{ paddingTop: '10px', borderTop: '2px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '13px', color: '#64748b' }}>Base Total</span>
+                                    <span style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>Rs. {baseTotal.toLocaleString()}</span>
+                                </div>
+                                {/* Profit row */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '8px 10px' }}>
+                                    <span style={{ fontSize: '13px', color: '#15803d', fontWeight: '600', flexShrink: 0 }}>Profit</span>
+                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#fff', border: '1.5px solid #86efac', borderRadius: '6px', padding: '0 8px 0 6px', height: '28px', width: '110px', boxSizing: 'border-box', flexShrink: 0 }}>
+                                        <span style={{ color: '#94a3b8', fontSize: '11px', fontWeight: '700', flexShrink: 0, userSelect: 'none' }}>Rs.</span>
+                                        <input
+                                            type="number" min="0"
+                                            value={effectiveProfit}
+                                            onChange={e => {
+                                                const val = Number(e.target.value);
+                                                setProfitOverride(isNaN(val) ? defaultProfit : val);
+                                            }}
+                                            onFocus={e => { e.target.style.outline = 'none'; }}
+                                            style={{ flex: 1, minWidth: 0, height: '100%', padding: '0', fontSize: '12px', border: 'none', outline: 'none', background: 'transparent', color: '#15803d', fontWeight: '700' }}
+                                        />
+                                    </div>
+                                    <span style={{ fontSize: '11px', fontWeight: '700', color: '#15803d', background: '#dcfce7', borderRadius: '4px', padding: '2px 6px', flexShrink: 0 }}>
+                                        {profitPct.toFixed(1)}%
+                                    </span>
+                                    {profitOverride !== null && (
+                                        <button
+                                            onClick={() => setProfitOverride(null)}
+                                            title="Reset to 10%"
+                                            style={{ marginLeft: 'auto', fontSize: '11px', color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', borderRadius: '4px', flexShrink: 0 }}
+                                        >
+                                            Reset
+                                        </button>
+                                    )}
                                 </div>
                                 <div style={{ paddingTop: '10px', borderTop: '2px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <span style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>Total</span>
