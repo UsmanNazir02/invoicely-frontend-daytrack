@@ -5,6 +5,7 @@ import {
     Sun, Zap, Building, Package, Plus, Minus, Trash2,
     User, Phone, Mail, MapPin, FileText, Calculator,
     Send, Save, Search, EyeOff, Pencil, ChevronDown, ChevronUp,
+    ChevronLeft, ChevronRight,
     BatteryFull, Wrench, Plug,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -124,6 +125,20 @@ export function QuoteBuilderPage() {
     const queryClient = useQueryClient();
     const [searchParams] = useSearchParams();
     const [activeTab, setActiveTab] = useState<ProductTab>('solar-panels');
+    const tabsRef = useRef<HTMLDivElement>(null);
+    const [canScrollLeft, setCanScrollLeft] = useState(false);
+    const [canScrollRight, setCanScrollRight] = useState(false);
+
+    const updateTabsScroll = () => {
+        const el = tabsRef.current;
+        if (!el) return;
+        setCanScrollLeft(el.scrollLeft > 4);
+        setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+    };
+    const scrollTabs = (dir: 'left' | 'right') => {
+        tabsRef.current?.scrollBy({ left: dir === 'left' ? -160 : 160, behavior: 'smooth' });
+    };
+    useEffect(() => { updateTabsScroll(); }, []);
     const [cart, setCart] = useState<CartItem[]>([]);
     const tempIdSeq = useRef(0);
     const hydratedId = useRef<string | null>(null);
@@ -421,27 +436,62 @@ export function QuoteBuilderPage() {
                         minWidth: 0,
                     }}>
                         {/* Tab bar */}
-                        <div className="qb-tabs" style={{
-                            flexShrink: 0,
-                            display: 'flex', gap: '3px', padding: '4px',
-                            background: '#f1f5f9', borderRadius: '12px',
-                            overflowX: 'auto',
-                        }}>
-                            {tabs.map(tab => (
-                                <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-                                    display: 'flex', alignItems: 'center', gap: '6px',
-                                    padding: '7px 14px', borderRadius: '9px', border: 'none',
-                                    fontWeight: '600', fontSize: '13px', whiteSpace: 'nowrap',
-                                    cursor: 'pointer', flexShrink: 0,
-                                    background: activeTab === tab.id ? '#fff' : 'transparent',
-                                    color: activeTab === tab.id ? '#0f172a' : '#64748b',
-                                    boxShadow: activeTab === tab.id ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
-                                    transition: 'all 0.15s',
-                                }}>
-                                    <tab.icon style={{ width: '14px', height: '14px', color: activeTab === tab.id ? tab.color : '#94a3b8' }} />
-                                    {tab.label}
-                                </button>
-                            ))}
+                        <div style={{ flexShrink: 0, position: 'relative', display: 'flex', alignItems: 'center', background: '#f1f5f9', borderRadius: '12px', padding: '4px' }}>
+                            {/* Left arrow */}
+                            <button
+                                onClick={() => scrollTabs('left')}
+                                style={{
+                                    flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    width: '26px', height: '26px', borderRadius: '7px', border: 'none',
+                                    background: canScrollLeft ? '#fff' : 'transparent',
+                                    boxShadow: canScrollLeft ? '0 1px 4px rgba(0,0,0,0.10)' : 'none',
+                                    cursor: canScrollLeft ? 'pointer' : 'default',
+                                    opacity: canScrollLeft ? 1 : 0.3,
+                                    transition: 'all 0.15s', zIndex: 1,
+                                }}
+                            >
+                                <ChevronLeft style={{ width: '14px', height: '14px', color: '#475569' }} />
+                            </button>
+
+                            {/* Scrollable strip */}
+                            <div
+                                ref={tabsRef}
+                                className="qb-tabs"
+                                onScroll={updateTabsScroll}
+                                style={{ flex: 1, display: 'flex', gap: '3px', overflowX: 'auto' }}
+                            >
+                                {tabs.map(tab => (
+                                    <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
+                                        display: 'flex', alignItems: 'center', gap: '6px',
+                                        padding: '7px 14px', borderRadius: '9px', border: 'none',
+                                        fontWeight: '600', fontSize: '13px', whiteSpace: 'nowrap',
+                                        cursor: 'pointer', flexShrink: 0,
+                                        background: activeTab === tab.id ? '#fff' : 'transparent',
+                                        color: activeTab === tab.id ? '#0f172a' : '#64748b',
+                                        boxShadow: activeTab === tab.id ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
+                                        transition: 'all 0.15s',
+                                    }}>
+                                        <tab.icon style={{ width: '14px', height: '14px', color: activeTab === tab.id ? tab.color : '#94a3b8' }} />
+                                        {tab.label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Right arrow */}
+                            <button
+                                onClick={() => scrollTabs('right')}
+                                style={{
+                                    flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    width: '26px', height: '26px', borderRadius: '7px', border: 'none',
+                                    background: canScrollRight ? '#fff' : 'transparent',
+                                    boxShadow: canScrollRight ? '0 1px 4px rgba(0,0,0,0.10)' : 'none',
+                                    cursor: canScrollRight ? 'pointer' : 'default',
+                                    opacity: canScrollRight ? 1 : 0.3,
+                                    transition: 'all 0.15s', zIndex: 1,
+                                }}
+                            >
+                                <ChevronRight style={{ width: '14px', height: '14px', color: '#475569' }} />
+                            </button>
                         </div>
 
                         {/* Search + toggle */}
