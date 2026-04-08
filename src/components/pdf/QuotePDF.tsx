@@ -337,12 +337,29 @@ const GROUPS: { label: string; keywords: string[] }[] = [
     { label: 'SERVICES', keywords: ['installation', 'civil', 'service'] },
 ];
 
+// Fixed display order — categories always appear in this sequence regardless of item order
+const CATEGORY_ORDER = [
+    'MAIN EQUIPMENTS',
+    'FABRICATED ITEMS',
+    'BREAKERS & SAFETY DEVICES',
+    'CABLES & ACCESSORIES',
+    'SERVICES',
+    'OTHER',
+];
+
 function getCategory(itemType: string): string {
     const lower = itemType.toLowerCase().replace(/_/g, ' ');
     for (const g of GROUPS) {
         if (g.keywords.some(k => lower.includes(k))) return g.label;
     }
     return 'OTHER';
+}
+
+function formatText(text: string | null | undefined): string {
+    if (!text) return '-';
+    return text
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase());
 }
 
 // ─── Background components ────────────────────────────────────────────────────
@@ -408,14 +425,16 @@ export function QuotePDF({ quote }: QuotePDFProps) {
         ? `${quote.systemSize} kW`
         : (totalW > 0 ? (totalW / 1000).toFixed(1) + ' kW' : 'XXX kW');
 
-    // Group items
-    const grouped: { category: string; items: typeof quote.items }[] = [];
+    // Group items and sort by fixed category order
+    const groupMap = new Map<string, typeof quote.items>();
     for (const item of (quote.items ?? [])) {
         const cat = getCategory(item.itemType);
-        const existing = grouped.find(g => g.category === cat);
-        if (existing) existing.items!.push(item);
-        else grouped.push({ category: cat, items: [item] });
+        if (!groupMap.has(cat)) groupMap.set(cat, []);
+        groupMap.get(cat)!.push(item);
     }
+    const grouped = CATEGORY_ORDER
+        .filter(cat => groupMap.has(cat))
+        .map(cat => ({ category: cat, items: groupMap.get(cat)! }));
 
     const today = new Date().toLocaleDateString('en-GB');
 
@@ -505,9 +524,8 @@ export function QuotePDF({ quote }: QuotePDFProps) {
                         <View style={styles.tableRow}>
                             <Text style={[styles.thCell, { width: '20%' }]}>DESCRIPTION</Text>
                             <Text style={[styles.thCell, { width: '25%' }]}>ITEMS DETAIL</Text>
-                            <Text style={[styles.thCell, { width: '25%' }]}>SPECIFICATION</Text>
-                            <Text style={[styles.thCell, { width: '15%' }]}>QUANTITY</Text>
-                            <Text style={[styles.thCell, { width: '15%', borderRightWidth: 0 }]}>TOTAL</Text>
+                            <Text style={[styles.thCell, { width: '30%' }]}>SPECIFICATION</Text>
+                            <Text style={[styles.thCell, { width: '25%', borderRightWidth: 0 }]}>QUANTITY</Text>
                         </View>
                         {grouped.map((group, gi) => (
                             <View key={gi}>
@@ -517,21 +535,16 @@ export function QuotePDF({ quote }: QuotePDFProps) {
                                 {group.items!.map((item, ii) => (
                                     <View style={styles.tableRow} key={ii}>
                                         <Text style={[styles.tdCell, { width: '20%' }]}>
-                                            {item.itemType.replace(/_/g, ' ')}
+                                            {formatText(item.itemType)}
                                         </Text>
                                         <Text style={[styles.tdCell, { width: '25%' }]}>
-                                            {item.itemName}
+                                            {formatText(item.itemName)}
                                         </Text>
-                                        <Text style={[styles.tdCell, { width: '25%' }]}>
-                                            {item.itemDescription ?? '-'}
+                                        <Text style={[styles.tdCell, { width: '30%' }]}>
+                                            {formatText(item.itemDescription)}
                                         </Text>
-                                        <Text style={[styles.tdCell, { width: '15%' }]}>
+                                        <Text style={[styles.tdCell, { width: '25%', borderRightWidth: 0 }]}>
                                             {item.quantity}
-                                        </Text>
-                                        <Text style={[styles.tdCell, { width: '15%', borderRightWidth: 0 }]}>
-                                            {item.totalPrice != null
-                                                ? Number(item.totalPrice).toLocaleString()
-                                                : '-'}
                                         </Text>
                                     </View>
                                 ))}
