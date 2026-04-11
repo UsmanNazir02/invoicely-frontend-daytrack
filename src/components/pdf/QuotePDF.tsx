@@ -50,27 +50,17 @@ const styles = StyleSheet.create({
     coverWrapper: {
         flex: 1,
         alignItems: 'center', // Centered horizontally
-        paddingTop: 190,
+        paddingTop: 360, // Pushed down further to leave space below background text
         paddingHorizontal: 40,
     },
-    coverTitle: {
-        fontSize: 32,
-        fontFamily: 'Montserrat',
-        fontWeight: 'bold',
-        marginBottom: 8,
-        color: '#ffffff',
-    },
     coverSubtitle: {
-        fontSize: 26,
+        fontSize: 30,
         fontFamily: 'Montserrat',
         fontWeight: 'bold',
+        letterSpacing: 1.0,
         marginBottom: 6,
         color: '#ffffff',
-    },
-    coverSubtext: {
-        fontSize: 12,
-        color: '#ffffff',
-        letterSpacing: 1.5,
+        textAlign: 'center',
     },
 
     // ── Content area ──────────────────────────────────────────────────────────
@@ -253,25 +243,6 @@ const styles = StyleSheet.create({
         color: '#000000',
     },
 
-    // ── Checklist ─────────────────────────────────────────────────────────────
-    checkRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 5,
-    },
-    checkBox: {
-        width: 12,
-        height: 12,
-        borderWidth: 1,
-        borderColor: '#374151',
-        marginRight: 10,
-        backgroundColor: '#ffffff',
-    },
-    checkLabel: {
-        fontSize: 9,
-        color: '#000000',
-    },
-
     // ── Signatures ────────────────────────────────────────────────────────────
     sigContainer: {
         flexDirection: 'row',
@@ -308,23 +279,6 @@ const styles = StyleSheet.create({
         flex: 1,
         borderBottomWidth: 1,
         borderBottomColor: '#999999',
-    },
-    // Page Numbering
-    triangleFooter: {
-        position: 'absolute',
-        bottom: 0,
-        right: 0,
-        width: 80,
-        height: 80,
-    },
-    pageNumberText: {
-        position: 'absolute',
-        bottom: 12,
-        right: 18,
-        fontSize: 16,
-        fontFamily: 'Montserrat',
-        fontWeight: 'bold',
-        color: '#ffffff',
     },
 });
 
@@ -364,42 +318,19 @@ function formatText(text: string | null | undefined): string {
 
 // ─── Background components ────────────────────────────────────────────────────
 // `fixed` on the View prevents @react-pdf from creating phantom blank pages.
-//
-// CoverBg uses page-bg.png (= dark teal TFP branded image) at FULL opacity.
-// PageBg  uses cover-bg.png (= light solar field) at opacity 0.08 (barely visible).
 
 function CoverBg() {
     return (
         <View style={[styles.bgCoverView, { zIndex: -1 }]} fixed>
-            <Image src={`${window.location.origin}/assets/pdf/page-bg.png`} style={styles.bgImage} />
+            <Image src={`${window.location.origin}/assets/pdf/background/qutationformat 1 1.png`} style={styles.bgImage} />
         </View>
     );
 }
 
-function PageBg({ pageNum }: { pageNum?: number }) {
+function PageBg({ bgImage }: { pageNum?: number; bgImage: string }) {
     return (
         <View style={[styles.bgPageView, { zIndex: -1 }]} fixed>
-            {/* Using page3-bg.png because it has the logo and the newer A-19 address */}
-            <Image src={`${window.location.origin}/assets/pdf/page3-bg.png`} style={styles.bgImage} />
-
-            {/* Cover the hardcoded "3" in the corner of page3-bg.png */}
-            <View style={{
-                position: 'absolute',
-                bottom: 8,
-                right: 12,
-                width: 30,
-                height: 30,
-                backgroundColor: '#ffffff'
-            }} />
-
-            {pageNum && (
-                <View style={styles.triangleFooter}>
-                    <Svg width="80" height="80">
-                        <Polygon points="80,0 80,80 0,80" fill="#72bf44" />
-                    </Svg>
-                    <Text style={styles.pageNumberText}>{pageNum}</Text>
-                </View>
-            )}
+            <Image src={`${window.location.origin}/assets/pdf/background/${bgImage}`} style={styles.bgImage} />
         </View>
     );
 }
@@ -445,15 +376,14 @@ export function QuotePDF({ quote }: QuotePDFProps) {
             <Page size="A4" style={styles.page}>
                 <CoverBg />
                 <View style={styles.coverWrapper}>
-                    <Text style={styles.coverTitle}>INITIAL PROPOSAL</Text>
-                    <Text style={styles.coverSubtitle}>{systemCapacity} Hybrid SYSTEM</Text>
-                    <Text style={styles.coverSubtext}>SOLAR POWER GENERATION SYSTEM</Text>
+                    <Text style={styles.coverSubtitle}>{`${systemCapacity} HYBRID`.toUpperCase()}</Text>
+                    <Text style={styles.coverSubtitle}>SOLAR SOLUTION</Text>
                 </View>
             </Page>
 
             {/* ═════════════════════════════════════ PAGE 2 — COVER LETTER */}
             <Page size="A4" style={styles.page}>
-                <PageBg pageNum={1} />
+                <PageBg pageNum={1} bgImage="qutationformat back 1.png" />
                 <View style={[styles.contentArea, { paddingTop: 110 }]}>
                     <View style={styles.customerInfoBlock}>
                         <View style={styles.infoRow}>
@@ -517,7 +447,7 @@ export function QuotePDF({ quote }: QuotePDFProps) {
 
             {/* ══════════════════════════════════ PAGE 3 — QUOTATION TABLE */}
             <Page size="A4" style={styles.page}>
-                <PageBg pageNum={2} />
+                <PageBg pageNum={2} bgImage="qutationformat back 2.png" />
                 <View style={[styles.contentArea, { paddingTop: 110 }]}>
                     <Text style={styles.tableTitle}>QUOTATION</Text>
                     <View style={styles.table}>
@@ -560,9 +490,9 @@ export function QuotePDF({ quote }: QuotePDFProps) {
                 </View>
             </Page>
 
-            {/* ══════════════════════════ PAGE 4 — TERMS & CONDITIONS (PART 1) */}
+            {/* ══════════════════════════ PAGE 4 — TERMS & CONDITIONS */}
             <Page size="A4" style={styles.page}>
-                <PageBg pageNum={3} />
+                <PageBg pageNum={3} bgImage="qutationformat back 3.png" />
                 <View style={[styles.contentArea, { paddingTop: 110 }]}>
                     <View style={{ marginBottom: 15 }}>
                         <Text style={[styles.pageHeader, { fontWeight: 'bold' }]}>TERMS &amp; CONDITIONS</Text>
@@ -570,18 +500,8 @@ export function QuotePDF({ quote }: QuotePDFProps) {
 
                     <View style={styles.section}>
                         <Text style={styles.bullet}>
-                            <Text style={styles.bulletTitle}>{'\u2022'} Indicative Price: PKR {Number(quote.finalAmount).toLocaleString()}/-, </Text>
-                            which is based on USD-PKR exchange rate of [280.07] PKR = 1 USD as at the date of this quotation. The impact of any depreciation in PKR with respect to the USD-PKR exchange rate forms part of the total product price and will be charged to the customer as set out below.
-                        </Text>
-
-                        <Text style={styles.bullet}>
                             <Text style={styles.bulletTitle}>{'\u2022'} Price Validity: </Text>
                             Price quoted is valid for 10 days from the date of quotation ({today}) or the date of confirmation/acceptance of order by customer, whichever is the earlier.
-                        </Text>
-
-                        <Text style={styles.bullet}>
-                            <Text style={styles.bulletTitle}>{'\u2022'} Other Terms: </Text>
-                            All payments to be made by crossed cheque in the name of The Future Power. Order by Customer will be deemed confirmed/accepted upon receipt of advance payment as per Payment Option selected by the Customer. Final Price of System will be calculated on USD-PKR exchange rate as at the date of installation or date of final payment by the customer. Balance, if any, due on account of exchange rate variation shall be paid by Customer upon invoice raised by The Future Power before installation of System at site.
                         </Text>
 
                         <Text style={styles.bullet}>
@@ -589,8 +509,8 @@ export function QuotePDF({ quote }: QuotePDFProps) {
                             10 Years Inverter &amp; Battery Warranty.
                         </Text>
                         <View style={{ marginLeft: 30 }}>
-                            <Text style={styles.bullet}>{'\u25CB'} 12 years Solar Panel manufacturing Warranty.</Text>
-                            <Text style={styles.bullet}>{'\u25CB'} 25 years Solar Panel performance Warranty.</Text>
+                            <Text style={styles.bullet}>{'-'} 12 years Solar Panel manufacturing Warranty.</Text>
+                            <Text style={styles.bullet}>{'-'} 25 years Solar Panel performance Warranty.</Text>
                         </View>
 
                         <Text style={styles.bullet}>
@@ -607,8 +527,8 @@ export function QuotePDF({ quote }: QuotePDFProps) {
                             <Text style={styles.bulletTitle}>{'\u2022'} Payment Option: </Text>
                         </Text>
                         <View style={{ marginLeft: 30 }}>
-                            <Text style={styles.bullet}>{'\u25CB'} Delivery Timeline: Option 1: Within 15 days from date of confirmation of order</Text>
-                            <Text style={styles.bullet}>{'\u25CB'} Payment Terms: 60% advance payment of Indicative Price</Text>
+                            <Text style={styles.bullet}>{'-'} Delivery Timeline: Option 1: Within 15 days from date of confirmation of order</Text>
+                            <Text style={styles.bullet}>{'-'} Payment Terms: 60% advance payment of Indicative Price</Text>
                             <View style={{ marginLeft: 45 }}>
                                 <Text style={styles.bullet}>{'\u2022'} 30% On Day Of Material Delivery</Text>
                                 <Text style={styles.bullet}>{'\u2022'} 10% After Installation</Text>
@@ -620,24 +540,16 @@ export function QuotePDF({ quote }: QuotePDFProps) {
                             The Future Power will assist Customer in procuring Net Metering. The obligation to procure required approvals rests with the Customer. In no circumstances shall The Future Power be held liable on any account if the said approval is not granted by NEPRA. The Future Power will assist Customer to prepare the required documentation for Net-Metering. Other Customer responsibilities for Net Metering include:
                         </Text>
                         <View style={{ marginLeft: 30 }}>
-                            <Text style={styles.bullet}>{'\u25CB'} DC/AC Earthing</Text>
-                            <Text style={styles.bullet}>{'\u25CB'} Meter Name change</Text>
-                            <Text style={styles.bullet}>{'\u25CB'} Sanction load change</Text>
-                            <Text style={styles.bullet}>{'\u25CB'} Net-Metering demand notice payment</Text>
+                            <Text style={styles.bullet}>{'-'} DC/AC Earthing</Text>
+                            <Text style={styles.bullet}>{'-'} Meter Name change</Text>
+                            <Text style={styles.bullet}>{'-'} Sanction load change</Text>
+                            <Text style={styles.bullet}>{'-'} Net-Metering demand notice payment</Text>
                         </View>
 
                         <Text style={[styles.bodyText, { marginTop: 8, fontSize: 8.5, fontStyle: 'italic', textAlign: 'justify' }]}>
                             Note: Fee for facilitation services rendered in Net-Metering will be charged separately at per actual. It will be applicable as per the laws of NEPRA and local DISCO. This is an additional service for customer support. Timeline for Net-Metering to be operational depends on the NEPRA/DISCO approvals.
                         </Text>
                     </View>
-                </View>
-            </Page>
-
-            {/* ══════════════════════════ PAGE 5 — SCOPE & CHECKLIST */}
-            <Page size="A4" style={styles.page}>
-                <PageBg pageNum={4} />
-                <View style={[styles.contentArea, { paddingTop: 110 }]}>
-                    <Text style={[styles.pageHeader, { fontWeight: 'bold' }]}>TERMS &amp; CONDITIONS</Text>
 
                     {/* Scope of Work */}
                     <View style={[styles.section, { marginTop: 20 }]}>
@@ -652,38 +564,12 @@ export function QuotePDF({ quote }: QuotePDFProps) {
                         </View>
                     </View>
 
-                    {/* Customer Check List */}
-                    <View style={[styles.section, { marginTop: 40 }]}>
-                        <Text style={[styles.tableTitle, { textAlign: 'center', marginBottom: 5 }]}>
-                            CUSTOMER CHECK LIST
-                        </Text>
-                        <Text style={[styles.bodyText, { textAlign: 'center', marginBottom: 20, fontSize: 8 }]}>
-                            (Tick the boxes if you have the following)
-                        </Text>
-
-                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 15, justifyContent: 'space-between', paddingHorizontal: 40 }}>
-                            {[
-                                'Proposal',
-                                'CNIC Copy / NTN Certificate (In case of business)',
-                                'Last Month Bill Copy',
-                                'Advance Payment Cheque',
-                                'PV Layout Design',
-                                'Sanction Load As Per System',
-                                'Meter Name as Per Requirement',
-                            ].map((label, key) => (
-                                <View style={[styles.checkRow, { width: '45%' }]} key={key}>
-                                    <View style={styles.checkBox} />
-                                    <Text style={styles.checkLabel}>{label}</Text>
-                                </View>
-                            ))}
-                        </View>
-                    </View>
                 </View>
             </Page>
 
-            {/* ══════════════════════════ PAGE 6 — ACKNOWLEDGEMENTS */}
+            {/* ══════════════════════════ PAGE 5 — ACKNOWLEDGEMENTS */}
             <Page size="A4" style={styles.page}>
-                <PageBg pageNum={5} />
+                <PageBg pageNum={4} bgImage="qutationformat back 4.png" />
                 <View style={[styles.contentArea, { paddingTop: 110 }]}>
                     <Text style={[styles.tableTitle, { fontSize: 20, marginBottom: 50 }]}>Acknowledgements</Text>
 
