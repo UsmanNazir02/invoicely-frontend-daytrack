@@ -5,9 +5,7 @@ import {
     View,
     StyleSheet,
     Image,
-    Font,
-    Svg,
-    Polygon
+    Font
 } from '@react-pdf/renderer';
 import type { Quote } from '../../types';
 
