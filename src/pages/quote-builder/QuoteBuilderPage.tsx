@@ -217,7 +217,7 @@ export function QuoteBuilderPage() {
         const defaultProfit = Math.round(baseTotal * 0.10);
         const effectiveProfit = profitOverride !== null ? profitOverride : defaultProfit;
         const profitPct = baseTotal > 0 ? (effectiveProfit / baseTotal) * 100 : 10;
-        const total = baseTotal + (effectiveProfit - defaultProfit);
+        const total = baseTotal + effectiveProfit;
         return { subtotal, discountAmount, baseTotal, defaultProfit, effectiveProfit, profitPct, total };
     }, [cart, discount, profitOverride]);
 
