@@ -1,610 +1,540 @@
 import {
     Document,
     Page,
-    Text,
     View,
-    StyleSheet,
+    Text,
     Image,
-    Font
+    StyleSheet,
+    Font,
+    Svg,
+    Circle,
+    Path,
 } from '@react-pdf/renderer';
-import type { Quote } from '../../types';
+import type { Quote, QuoteItem } from '../../types';
+
+// ─── Asset paths ──────────────────────────────────────────────────────────────
+const ORIGIN = typeof window !== 'undefined' ? window.location.origin : '';
+const ASSET  = `${ORIGIN}/assets/pdf/daytrack`;
+const PAGES  = `${ASSET}/pages`;
 
 Font.register({
     family: 'Montserrat',
     fonts: [
-        { src: `${window.location.origin}/assets/pdf/fonts/Montserrat-Regular.ttf`, fontWeight: 'normal' },
-        { src: `${window.location.origin}/assets/pdf/fonts/Montserrat-Italic.ttf`, fontWeight: 'normal', fontStyle: 'italic' },
-        { src: `${window.location.origin}/assets/pdf/fonts/Montserrat-Bold.ttf`, fontWeight: 'bold' },
-        { src: `${window.location.origin}/assets/pdf/fonts/Montserrat-ExtraBold.ttf`, fontWeight: 800 },
-    ]
+        { src: `${ORIGIN}/assets/pdf/fonts/Montserrat-Regular.ttf`,   fontWeight: 'normal' },
+        { src: `${ORIGIN}/assets/pdf/fonts/Montserrat-Italic.ttf`,    fontWeight: 'normal', fontStyle: 'italic' },
+        { src: `${ORIGIN}/assets/pdf/fonts/Montserrat-Bold.ttf`,       fontWeight: 'bold' },
+        { src: `${ORIGIN}/assets/pdf/fonts/Montserrat-ExtraBold.ttf`,  fontWeight: 800 },
+    ],
 });
 
+// ─── Palette ──────────────────────────────────────────────────────────────────
+const BLU  = '#1b5082';
+const GRN  = '#2d9e5f';
+const ORG  = '#e8921a';
+const TXT  = '#333333';
+const ICON = '#1a7fa8'; // teal-blue of the footer circles
 
-const styles = StyleSheet.create({
-    page: {
-        backgroundColor: '#ffffff',
+// A4 in points
+const PW = 595;
+const PH = 842;
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const s = StyleSheet.create({
+    // Full-page background — explicit A4 pts so it never pushes content to next page
+    pageBg: {
+        position: 'absolute',
+        top: 0, left: 0,
+        width: PW, height: PH,
+    },
+
+    // ── Cover page ──────────────────────────────────────────────────────────
+    coverLogo: {
+        width: 205,
+    },
+    coverTitle: {
         fontFamily: 'Montserrat',
-    },
-
-    // Cover bg: page-bg.png at full opacity = dark navy/teal with TFP logo
-    bgCoverView: {
-        position: 'absolute',
-        top: 0, left: 0, right: 0, bottom: 0,
-    },
-
-    // Inner page bg: image35.png is CLEAN (no hardcoded page numbers)
-    bgPageView: {
-        position: 'absolute',
-        top: 0, left: 0, right: 0, bottom: 0,
-        zIndex: -1,
-    },
-
-    bgImage: {
-        width: '100%',
-        height: '100%',
-    },
-
-    // ── Cover layout ──────────────────────────────────────────────────────────
-    coverWrapper: {
-        flex: 1,
-        alignItems: 'center', // Centered horizontally
-        paddingTop: 360, // Pushed down further to leave space below background text
-        paddingHorizontal: 40,
+        fontWeight: 'bold',
+        fontSize: 26,
+        color: BLU,
+        textAlign: 'center',
+        lineHeight: 1.25,
     },
     coverSubtitle: {
-        fontSize: 30,
         fontFamily: 'Montserrat',
         fontWeight: 'bold',
-        letterSpacing: 1.0,
-        marginBottom: 6,
-        color: '#ffffff',
+        fontSize: 14,
+        color: TXT,
         textAlign: 'center',
     },
-
-    // ── Content area ──────────────────────────────────────────────────────────
-    contentArea: {
-        paddingHorizontal: 85, // Increased for "middle" alignment
-        paddingBottom: 85, /* Safely avoids the newly restored footer banner */
+    coverTable: {
+        width: 312,
     },
-
-    // ── Customer info ─────────────────────────────────────────────────────────
-    customerInfoBlock: {
-        marginBottom: 16,
-    },
-    infoRow: {
+    coverRowTop: {
         flexDirection: 'row',
-        marginBottom: 6,
-        alignItems: 'flex-end',
-    },
-    infoLabel: {
-        width: 150,
-        fontSize: 9.5,
-        color: '#000000',
-    },
-    infoValue: {
-        flex: 1,
-        fontSize: 9.5,
-        color: '#000000',
         borderBottomWidth: 1,
         borderBottomColor: '#888888',
-        paddingBottom: 1,
     },
-
-    // ── Body text ─────────────────────────────────────────────────────────────
-    paragraph: {
-        fontSize: 9,
-        lineHeight: 1.35,
-        marginBottom: 8,
-        textAlign: 'justify',
-        color: '#000000',
+    coverRowBot: {
+        flexDirection: 'row',
     },
-    paragraphBold: {
-        fontSize: 9,
+    coverCellLabel: {
+        width: 135,
+        backgroundColor: GRN,
+        paddingVertical: 10,
+        paddingHorizontal: 10,
+    },
+    coverCellLabelTxt: {
         fontFamily: 'Montserrat',
         fontWeight: 'bold',
-        lineHeight: 1.3,
-        marginBottom: 2,
-        color: '#000000',
+        fontSize: 9.5,
+        color: '#ffffff',
     },
-
-    // ── Quotation table ───────────────────────────────────────────────────────
-    tableTitle: {
-        fontSize: 16,
+    coverCellValue: {
+        flex: 1,
+        backgroundColor: ORG,
+        paddingVertical: 10,
+        paddingHorizontal: 10,
+    },
+    coverCellValueTxt: {
         fontFamily: 'Montserrat',
         fontWeight: 'bold',
+        fontSize: 9.5,
+        color: '#1a1a1a',
+    },
+    coverAddressTxt: {
+        fontFamily: 'Montserrat',
+        fontSize: 7.5,
+        color: '#555555',
         textAlign: 'center',
-        marginBottom: 16,
-        color: '#000000',
+        lineHeight: 1.5,
     },
-    table: {
-        width: '100%',
-        borderWidth: 1,
-        borderColor: '#72bf44',
-        borderStyle: 'solid',
+
+    // ── Financial proposal page ─────────────────────────────────────────────
+    proposalLogo: {
+        width: 110,
+    },
+    proposalTitle: {
+        fontFamily: 'Montserrat',
+        fontWeight: 'bold',
+        fontSize: 13,
+        color: GRN,
+        textAlign: 'center',
+        marginTop: 8,
+        marginBottom: 10,
+        marginHorizontal: 30,
+    },
+
+    // Table
+    tableHeaderRow: {
+        flexDirection: 'row',
+        backgroundColor: BLU,
+    },
+    thCell: {
+        fontFamily: 'Montserrat',
+        fontWeight: 'bold',
+        fontSize: 8,
+        color: '#ffffff',
+        textAlign: 'center',
+        paddingVertical: 6,
+        paddingHorizontal: 4,
     },
     tableRow: {
         flexDirection: 'row',
+        backgroundColor: '#ffffff',
+        borderBottomWidth: 0.5,
+        borderBottomColor: '#dddddd',
     },
-    thCell: {
-        padding: 7,
-        backgroundColor: '#e9f4d9',
-        borderBottomWidth: 1,
-        borderRightWidth: 1,
-        borderColor: '#72bf44',
-        borderStyle: 'solid',
-        textAlign: 'center',
-        fontSize: 9,
+    tableRowAlt: {
+        flexDirection: 'row',
+        backgroundColor: '#ddeef8',
+        borderBottomWidth: 0.5,
+        borderBottomColor: '#dddddd',
+    },
+    tdNum: {
         fontFamily: 'Montserrat',
-        fontWeight: 'bold',
-        color: '#000000',
+        fontSize: 8,
+        color: TXT,
+        textAlign: 'center',
+        paddingVertical: 5,
+        paddingHorizontal: 3,
     },
-    sectionCell: {
+    tdItem: {
+        fontFamily: 'Montserrat',
+        fontSize: 8,
+        color: TXT,
+        textAlign: 'center',
+        paddingVertical: 5,
+        paddingHorizontal: 4,
+    },
+    tdSpec: {
+        fontFamily: 'Montserrat',
+        fontSize: 7.5,
+        color: TXT,
+        textAlign: 'left',
+        paddingVertical: 5,
+        paddingHorizontal: 5,
+    },
+    tdUnit: {
+        fontFamily: 'Montserrat',
+        fontSize: 8,
+        color: TXT,
+        textAlign: 'center',
+        paddingVertical: 5,
+        paddingHorizontal: 3,
+    },
+    tdQty: {
+        fontFamily: 'Montserrat',
+        fontSize: 8,
+        color: TXT,
+        textAlign: 'center',
+        paddingVertical: 5,
+        paddingHorizontal: 3,
+    },
+
+    // Pricing summary
+    summaryWrap: {
+        alignSelf: 'flex-end',
+        width: 270,
+        marginTop: 12,
+        marginRight: 30,
+        borderWidth: 1,
+        borderColor: '#cccccc',
+    },
+    summaryRow: {
+        flexDirection: 'row',
+        borderBottomWidth: 0.5,
+        borderBottomColor: '#cccccc',
+    },
+    summaryLabel: {
         flex: 1,
-        padding: 7,
-        backgroundColor: '#d4edaa',
-        borderBottomWidth: 1,
-        borderColor: '#72bf44',
-        borderStyle: 'solid',
-        textAlign: 'center',
-        fontSize: 9,
         fontFamily: 'Montserrat',
-        fontWeight: 'bold',
-        color: '#000000',
-    },
-    tdCell: {
-        padding: 7,
-        backgroundColor: '#f8fbf5',
-        borderBottomWidth: 1,
-        borderRightWidth: 1,
-        borderColor: '#72bf44',
-        borderStyle: 'solid',
         fontSize: 9,
-        textAlign: 'center',
-        color: '#000000',
+        color: TXT,
+        padding: 6,
     },
-    totalLabelCell: {
-        flex: 1,
-        padding: 7,
-        backgroundColor: '#e9f4d9',
-        borderBottomWidth: 1,
-        borderRightWidth: 1,
-        borderColor: '#72bf44',
-        borderStyle: 'solid',
-        fontSize: 9,
+    summaryValue: {
+        width: 115,
         fontFamily: 'Montserrat',
-        fontWeight: 'bold',
+        fontSize: 9,
+        color: TXT,
         textAlign: 'right',
-        color: '#000000',
+        padding: 6,
     },
-    totalValueCell: {
-        width: '20%',
-        padding: 7,
-        backgroundColor: '#e9f4d9',
-        borderBottomWidth: 1,
-        borderColor: '#72bf44',
-        borderStyle: 'solid',
-        fontSize: 9,
-        fontFamily: 'Montserrat',
-        fontWeight: 'bold',
-        textAlign: 'center',
-        color: '#000000',
-    },
-
-    // ── Terms ─────────────────────────────────────────────────────────────────
-    pageHeader: {
-        fontSize: 15,
-        fontFamily: 'Montserrat',
-        fontWeight: 'bold',
-        textAlign: 'center',
-        marginBottom: 12,
-        color: '#000000',
-    },
-    section: {
-        marginBottom: 8,
-    },
-    sectionTitle: {
-        fontSize: 9.5,
-        fontFamily: 'Montserrat',
-        fontWeight: 'bold',
-        marginBottom: 2,
-        color: '#000000',
-    },
-    bodyText: {
-        fontSize: 9,
-        lineHeight: 1.3,
-        color: '#000000',
-        marginBottom: 2,
-    },
-    bullet: {
-        fontSize: 9,
-        lineHeight: 1.3,
-        marginLeft: 14,
-        marginBottom: 3,
-        color: '#000000',
-    },
-    bulletTitle: {
-        fontWeight: 'bold',
-        color: '#000000',
-    },
-    circleBullet: {
-        fontSize: 9,
-        lineHeight: 1.3,
-        marginLeft: 28,
-        marginBottom: 2,
-        color: '#000000',
-    },
-    numbered: {
-        fontSize: 9,
-        lineHeight: 1.3,
-        marginLeft: 18,
-        marginBottom: 2,
-        color: '#000000',
-    },
-
-    // ── Signatures ────────────────────────────────────────────────────────────
-    sigContainer: {
+    summaryTotalRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: 45,
+        backgroundColor: '#fef5e0',
     },
-    sigBlock: {
-        width: '40%',
-    },
-    sigLine: {
-        borderTopWidth: 1,
-        borderTopColor: '#333333',
-        marginBottom: 5,
-    },
-    sigLabel: {
-        fontSize: 10,
-        fontFamily: 'Montserrat',
-        fontWeight: 'bold',
-        textAlign: 'center',
-        marginBottom: 14,
-        color: '#000000',
-    },
-    sigFieldRow: {
-        flexDirection: 'row',
-        marginBottom: 7,
-        alignItems: 'flex-end',
-    },
-    sigFieldLabel: {
-        width: 40,
-        fontSize: 10,
-        color: '#000000',
-    },
-    sigFieldLine: {
+    summaryTotalLabel: {
         flex: 1,
-        borderBottomWidth: 1,
-        borderBottomColor: '#999999',
+        fontFamily: 'Montserrat',
+        fontWeight: 'bold',
+        fontSize: 9,
+        color: BLU,
+        padding: 6,
+    },
+    summaryTotalValue: {
+        width: 115,
+        fontFamily: 'Montserrat',
+        fontWeight: 'bold',
+        fontSize: 9,
+        color: BLU,
+        textAlign: 'right',
+        padding: 6,
     },
 });
 
-// ─── Category grouping ────────────────────────────────────────────────────────
-const GROUPS: { label: string; keywords: string[] }[] = [
-    { label: 'MAIN EQUIPMENTS', keywords: ['solar', 'panel', 'inverter', 'battery'] },
-    { label: 'FABRICATED ITEMS', keywords: ['structure', 'elevated', 'combiner', 'box'] },
-    { label: 'BREAKERS & SAFETY DEVICES', keywords: ['fuse', 'breaker', 'spd', 'safety'] },
-    { label: 'CABLES & ACCESSORIES', keywords: ['cable', 'cabling', 'accessory', 'accessories', 'conduit'] },
-    { label: 'SERVICES', keywords: ['installation', 'civil', 'service'] },
-];
+// ─── Footer component (matches all other pages) ───────────────────────────────
+// SVG icon paths for footer circles
+const GLOBE_PATH  = 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z';
+const PHONE_PATH  = 'M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z';
+const EMAIL_PATH  = 'M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z';
 
-// Fixed display order — categories always appear in this sequence regardless of item order
-const CATEGORY_ORDER = [
-    'MAIN EQUIPMENTS',
-    'FABRICATED ITEMS',
-    'BREAKERS & SAFETY DEVICES',
-    'CABLES & ACCESSORIES',
-    'SERVICES',
-    'OTHER',
-];
+function FooterItem({ iconPath, label }: { iconPath: string; label: string }) {
+    return (
+        <View style={{ alignItems: 'center', flexDirection: 'column' }}>
+            <Svg width={22} height={22} viewBox="0 0 24 24">
+                <Circle cx={12} cy={12} r={12} fill={ICON} />
+                <Path d={iconPath} fill="#ffffff" transform="translate(3.6,3.6) scale(0.7)" />
+            </Svg>
+            <Text style={{
+                fontFamily: 'Montserrat',
+                fontSize: 6.5,
+                color: '#444444',
+                textAlign: 'center',
+                marginTop: 3,
+            }}>{label}</Text>
+        </View>
+    );
+}
 
-function getCategory(itemType: string): string {
-    const lower = itemType.toLowerCase().replace(/_/g, ' ');
-    for (const g of GROUPS) {
-        if (g.keywords.some(k => lower.includes(k))) return g.label;
+function ProposalFooter() {
+    return (
+        <View style={{
+            position: 'absolute',
+            bottom: 0, left: 0, right: 0,
+            flexDirection: 'row',
+            justifyContent: 'space-around',
+            alignItems: 'center',
+            paddingBottom: 10,
+            paddingTop: 6,
+        }} fixed>
+            <FooterItem iconPath={GLOBE_PATH}  label="www.daytracksolar.com" />
+            <FooterItem iconPath={PHONE_PATH}  label={'+92 327 8277066  |  +92 327 8277055'} />
+            <FooterItem iconPath={EMAIL_PATH}  label="info@daytracksolar.com" />
+        </View>
+    );
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function getRowLabel(item: QuoteItem): string {
+    switch (item.itemType) {
+        case 'solar_panel':  return 'Solar Panel';
+        case 'inverter':     return 'Solar Inverter';
+        case 'battery':      return 'Battery';
+        case 'structure':    return 'Structure';
+        case 'service':      return 'Services';
+        case 'electrical':   return 'Electrical';
+        case 'misc_item':    return item.itemName || 'Misc Item';
+        default:             return item.itemName || item.itemType;
     }
-    return 'OTHER';
 }
 
-function formatText(text: string | null | undefined): string {
-    if (!text) return '-';
-    return text
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, c => c.toUpperCase());
+function buildSpec(item: QuoteItem): string {
+    const parts: string[] = [];
+    if (item.brandName)       parts.push(`Make: ${item.brandName}`);
+    if (item.itemName && item.itemType !== 'misc_item') parts.push(item.itemName);
+    if (item.itemDescription) parts.push(item.itemDescription);
+    return parts.filter(Boolean).join('\n') || '-';
 }
 
-// ─── Background components ────────────────────────────────────────────────────
-// `fixed` on the View prevents @react-pdf from creating phantom blank pages.
+function getUnit(itemType: string): string {
+    switch (itemType) {
+        case 'solar_panel':
+        case 'inverter':
+        case 'battery':
+            return 'Nos';
+        default:
+            return 'JOB';
+    }
+}
 
-function CoverBg() {
-    return (
-        <View style={[styles.bgCoverView, { zIndex: -1 }]} fixed>
-            <Image src={`${window.location.origin}/assets/pdf/background/qutationformat 1 1.png`} style={styles.bgImage} />
-        </View>
+const ITEM_ORDER: Record<string, number> = {
+    solar_panel: 1, inverter: 2, battery: 3,
+    structure: 4, electrical: 5, misc_item: 6, service: 7,
+};
+
+function sortItems(items: QuoteItem[]): QuoteItem[] {
+    return [...items].sort(
+        (a, b) => (ITEM_ORDER[a.itemType] ?? 99) - (ITEM_ORDER[b.itemType] ?? 99)
     );
 }
 
-function PageBg({ bgImage }: { pageNum?: number; bgImage: string }) {
-    return (
-        <View style={[styles.bgPageView, { zIndex: -1 }]} fixed>
-            <Image src={`${window.location.origin}/assets/pdf/background/${bgImage}`} style={styles.bgImage} />
-        </View>
-    );
+function generateRefNo(quote: Quote): string {
+    const d  = new Date(quote.createdAt);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yy = String(d.getFullYear()).slice(-2);
+    const sx = quote.id.replace(/[^a-zA-Z0-9]/g, '').slice(-2).toUpperCase();
+    return `DTS-${dd}${mm}${yy}-${sx}`;
+}
+
+function fmtCurrency(n: number): string {
+    return Number(n).toLocaleString('en-PK') + '/-';
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
-interface QuotePDFProps {
-    quote: Quote;
-}
+interface QuotePDFProps { quote: Quote }
 
 export function QuotePDF({ quote }: QuotePDFProps) {
-    // System capacity
-    const panelItems = (quote.items ?? []).filter(i => {
-        const t = i.itemType.toLowerCase().replace(/_/g, ' ');
-        return t.includes('solar') || t.includes('panel');
-    });
-    const guessWattage = (item: { itemName?: string; itemDescription?: string }): number => {
-        const src = `${item.itemName ?? ''} ${item.itemDescription ?? ''}`;
-        const m = src.match(/(\d{3,4})\s*[wW]/);
-        return m ? parseInt(m[1], 10) : 585;
-    };
-    const totalW = panelItems.reduce((s, i) => s + i.quantity * guessWattage(i), 0);
-    const systemCapacity = quote.systemSize != null
-        ? `${quote.systemSize} kW`
-        : (totalW > 0 ? (totalW / 1000).toFixed(1) + ' kW' : 'XXX kW');
+    const items       = quote.items ?? [];
+    const sortedItems = sortItems(items);
 
-    // Group items and sort by fixed category order
-    const groupMap = new Map<string, typeof quote.items>();
-    for (const item of (quote.items ?? [])) {
-        const cat = getCategory(item.itemType);
-        if (!groupMap.has(cat)) groupMap.set(cat, []);
-        groupMap.get(cat)!.push(item);
-    }
-    const grouped = CATEGORY_ORDER
-        .filter(cat => groupMap.has(cat))
-        .map(cat => ({ category: cat, items: groupMap.get(cat)! }));
+    const systemKw = quote.systemSize != null
+        ? `${Number(quote.systemSize).toFixed(1)}`
+        : (() => {
+            const panels = items.filter(i => i.itemType === 'solar_panel');
+            const totalW = panels.reduce((sum, i) => {
+                const m = `${i.itemName ?? ''} ${i.itemDescription ?? ''}`.match(/(\d{3,4})\s*[wW]/);
+                return sum + i.quantity * (m ? parseInt(m[1], 10) : 585);
+            }, 0);
+            return totalW > 0 ? (totalW / 1000).toFixed(1) : '0.0';
+        })();
 
-    const today = new Date().toLocaleDateString('en-GB');
+    const preparedBy = (quote as any).salesRepName ?? quote.createdBy?.fullName ?? 'DayTrack Solar Solutions';
+    const refNo      = generateRefNo(quote);
+
+    const bgUrl   = `${ASSET}/daytrack-bg.jpg`;   // resized to A4 proportions
+    const logoUrl = `${ASSET}/daytrack-logo.png`;
+
+    // Column widths for the financial proposal table
+    const W = { no: 22, item: 72, unit: 36, qty: 24 };
 
     return (
         <Document>
 
-            {/* ═══════════════════════════════════════════════ PAGE 1 — COVER */}
-            <Page size="A4" style={styles.page}>
-                <CoverBg />
-                <View style={styles.coverWrapper}>
-                    <Text style={styles.coverSubtitle}>{`${systemCapacity} HYBRID`.toUpperCase()}</Text>
-                    <Text style={styles.coverSubtitle}>SOLAR SOLUTION</Text>
+            {/* ══════════════════════════════════════════ PAGE 1 — COVER
+                  Mirrors Page 4's pattern exactly: absolute background + normal-flow
+                  content with margins. This is the only pattern react-pdf v4 renders
+                  correctly without generating a ghost empty page. */}
+            <Page size="A4" style={{ fontFamily: 'Montserrat' }}>
+
+                {/* Background — same as Page 4: absolute + fixed anchors it to the page */}
+                <Image src={bgUrl} style={s.pageBg} fixed />
+
+                {/* Logo — normal flow, centred, margin pushes it to y≈65 */}
+                <View style={{ alignSelf: 'center', marginTop: 65 }}>
+                    <Image src={logoUrl} style={{ width: 205, height: 114 }} />
                 </View>
+
+                {/* Title — normal flow, logo bottom=179 → marginTop=50 → top≈229 */}
+                <View style={{ marginTop: 50, marginHorizontal: 48 }}>
+                    <Text style={s.coverTitle}>{'RESIDENTIAL PROJECT\nPROPOSAL'}</Text>
+                </View>
+
+                {/* Subtitle — title height≈65 → bottom≈294 → marginTop=10 → top≈304 */}
+                <View style={{ marginTop: 10, marginHorizontal: 48 }}>
+                    <Text style={s.coverSubtitle}>{systemKw} KW HYBRID Quotation</Text>
+                </View>
+
+                {/* Info table — subtitle height≈17 → bottom≈321 → marginTop=27 → top≈348 */}
+                <View style={{ marginTop: 27, alignSelf: 'center', width: 312 }}>
+                    <View style={s.coverRowTop}>
+                        <View style={s.coverCellLabel}>
+                            <Text style={s.coverCellLabelTxt}>Prepared By:</Text>
+                        </View>
+                        <View style={s.coverCellValue}>
+                            <Text style={s.coverCellValueTxt}>{preparedBy}</Text>
+                        </View>
+                    </View>
+                    <View style={s.coverRowBot}>
+                        <View style={s.coverCellLabel}>
+                            <Text style={s.coverCellLabelTxt}>Reference Number:</Text>
+                        </View>
+                        <View style={s.coverCellValue}>
+                            <Text style={s.coverCellValueTxt}>{refNo}</Text>
+                        </View>
+                    </View>
+                </View>
+
+                {/* Company address — absolute at bottom, same as ProposalFooter in Page 4 */}
+                <View style={{ position: 'absolute', bottom: 22, left: 0, right: 0, alignItems: 'center' }}>
+                    <Text style={s.coverAddressTxt}>
+                        {'Address: Office No. M3, Mezzanine Floor, Sadaf Garden,\nBlock-14, Near Kababjees, Munawar Chowrangi, Gulistan-e-Jauhar, Karachi'}
+                    </Text>
+                </View>
+
             </Page>
 
-            {/* ═════════════════════════════════════ PAGE 2 — COVER LETTER */}
-            <Page size="A4" style={styles.page}>
-                <PageBg pageNum={1} bgImage="qutationformat back 1.png" />
-                <View style={[styles.contentArea, { paddingTop: 110 }]}>
-                    <View style={styles.customerInfoBlock}>
-                        <View style={styles.infoRow}>
-                            <Text style={styles.infoLabel}>Customer/ Company Name:</Text>
-                            <Text style={styles.infoValue}>{quote.customerName}</Text>
-                        </View>
-                        <View style={styles.infoRow}>
-                            <Text style={styles.infoLabel}>Email:</Text>
-                            <Text style={styles.infoValue}>{quote.customerEmail ?? ''}</Text>
-                        </View>
-                        <View style={styles.infoRow}>
-                            <Text style={styles.infoLabel}>Phone:</Text>
-                            <Text style={styles.infoValue}>{quote.customerPhone}</Text>
-                        </View>
-                        <View style={styles.infoRow}>
-                            <Text style={styles.infoLabel}>System Size:</Text>
-                            <Text style={styles.infoValue}>{systemCapacity}</Text>
-                        </View>
-                    </View>
-
-                    <Text style={[styles.paragraph, { marginTop: 4 }]}>Dear Sir/ Madam,</Text>
-                    <Text style={styles.paragraph}>
-                        Thank you for giving The Future Power (TFP) an opportunity to submit this proposal. We strive to provide
-                        savings in your overall electricity consumption and manage your energy resources with Smart Energy System
-                        you can get rid of noisy generators, inefficient UPS and can enjoy uninterrupted clean power supply.
-                    </Text>
-                    <Text style={styles.paragraph}>
-                        TFP's principal inverter supplies solar power even during power outages. The TFP's all-embracing Solar
-                        System has an energy monitoring software which can enable the consumer to reduce your electricity bill up
-                        to ZERO. With the net metering package, should you avail it from your electricity supplier; you opt to sell
-                        excess energy back to the grid translating it into a direct economic benefit.
-                    </Text>
-                    <Text style={styles.paragraph}>
-                        Net Metering contributes towards bringing more energy cost efficiency by exporting excess energy back to
-                        the grid. Excess energy produced is environment friendly since it is green energy being produced from
-                        renewable resources. TFP's Solar System ({systemCapacity} Package) enables you to avail net metering
-                        from your electric supply company.
-                    </Text>
-                    <Text style={styles.paragraph}>
-                        After TFP System is installed at your premises, it is remotely monitored 24/7 through Network Operations
-                        Center (NOC) by technical personnel to ensure smooth operations. In case of any technical issues; NOC
-                        personnel remotely diagnose and take corrective actions, if needed, over the Internet, where on site visit
-                        is not required.
-                    </Text>
-                    <Text style={styles.paragraph}>
-                        The attached quotation is based on a standard package, as described. We look forward to helping you
-                        achieve more energy independence, providing a good investment for years to come, and helping you make
-                        a more positive environmental impact.
-                    </Text>
-                    <View style={{ marginTop: 20 }}>
-                        <Text style={styles.paragraph}>Thanks &amp; Regards,</Text>
-                        <Text style={styles.paragraphBold}>
-                            {(quote as any).salesRepName ?? 'The Future Power Team'}
-                        </Text>
-                        {(quote as any).salesRepPhone
-                            ? <Text style={styles.paragraph}>{(quote as any).salesRepPhone}</Text>
-                            : null}
-                    </View>
-                </View>
+            {/* ══════════════════════════════════════ PAGE 2 — WHO WE ARE */}
+            <Page size="A4">
+                <Image src={`${PAGES}/page-02.png`} style={s.pageBg} />
             </Page>
 
-            {/* ══════════════════════════════════ PAGE 3 — QUOTATION TABLE */}
-            <Page size="A4" style={styles.page}>
-                <PageBg pageNum={2} bgImage="qutationformat back 2.png" />
-                <View style={[styles.contentArea, { paddingTop: 110 }]}>
-                    <Text style={styles.tableTitle}>QUOTATION</Text>
-                    <View style={styles.table}>
-                        <View style={styles.tableRow}>
-                            <Text style={[styles.thCell, { width: '20%' }]}>DESCRIPTION</Text>
-                            <Text style={[styles.thCell, { width: '25%' }]}>ITEMS DETAIL</Text>
-                            <Text style={[styles.thCell, { width: '30%' }]}>SPECIFICATION</Text>
-                            <Text style={[styles.thCell, { width: '25%', borderRightWidth: 0 }]}>QUANTITY</Text>
-                        </View>
-                        {grouped.map((group, gi) => (
-                            <View key={gi}>
-                                <View style={styles.tableRow}>
-                                    <Text style={styles.sectionCell}>{group.category}</Text>
-                                </View>
-                                {group.items!.map((item, ii) => (
-                                    <View style={styles.tableRow} key={ii}>
-                                        <Text style={[styles.tdCell, { width: '20%' }]}>
-                                            {formatText(item.itemType)}
-                                        </Text>
-                                        <Text style={[styles.tdCell, { width: '25%' }]}>
-                                            {formatText(item.itemName)}
-                                        </Text>
-                                        <Text style={[styles.tdCell, { width: '30%' }]}>
-                                            {formatText(item.itemDescription)}
-                                        </Text>
-                                        <Text style={[styles.tdCell, { width: '25%', borderRightWidth: 0 }]}>
-                                            {item.quantity}
-                                        </Text>
-                                    </View>
-                                ))}
-                            </View>
-                        ))}
-                        <View style={styles.tableRow}>
-                            <Text style={styles.totalLabelCell}>GRAND TOTAL:</Text>
-                            <Text style={styles.totalValueCell}>
-                                {Number(quote.finalAmount).toLocaleString()} /-
-                            </Text>
-                        </View>
-                    </View>
-                </View>
+            {/* ══════════════════════ PAGE 3 — SYSTEM DESIGN / INSTALLATION */}
+            <Page size="A4">
+                <Image src={`${PAGES}/page-03.png`} style={s.pageBg} />
             </Page>
 
-            {/* ══════════════════════════ PAGE 4 — TERMS & CONDITIONS */}
-            <Page size="A4" style={styles.page}>
-                <PageBg pageNum={3} bgImage="qutationformat back 3.png" />
-                <View style={[styles.contentArea, { paddingTop: 110 }]}>
-                    <View style={{ marginBottom: 15 }}>
-                        <Text style={[styles.pageHeader, { fontWeight: 'bold' }]}>TERMS &amp; CONDITIONS</Text>
-                    </View>
+            {/* ═══════════════════════════════ PAGE 4 — FINANCIAL PROPOSAL
+                  paddingBottom leaves room for the fixed footer (≈45 pts).
+                  If the table overflows, the `fixed` bg+footer repeat automatically. */}
+            <Page size="A4" style={{ fontFamily: 'Montserrat', paddingBottom: 48 }}>
+                {/* Background repeats on every continuation page */}
+                <Image src={bgUrl} style={s.pageBg} fixed />
 
-                    <View style={styles.section}>
-                        <Text style={styles.bullet}>
-                            <Text style={styles.bulletTitle}>{'\u2022'} Price Validity: </Text>
-                            Price quoted is valid for 10 days from the date of quotation ({today}) or the date of confirmation/acceptance of order by customer, whichever is the earlier.
-                        </Text>
-
-                        <Text style={styles.bullet}>
-                            <Text style={styles.bulletTitle}>{'\u2022'} Warranty: </Text>
-                            10 Years Inverter &amp; Battery Warranty.
-                        </Text>
-                        <View style={{ marginLeft: 30 }}>
-                            <Text style={styles.bullet}>{'-'} 12 years Solar Panel manufacturing Warranty.</Text>
-                            <Text style={styles.bullet}>{'-'} 25 years Solar Panel performance Warranty.</Text>
-                        </View>
-
-                        <Text style={styles.bullet}>
-                            <Text style={styles.bulletTitle}>{'\u2022'} Operation &amp; Maintenance: </Text>
-                            One (1) year free-of-cost O&amp;M services as per prevailing company policy. Thereafter, Customer will be charged for O&amp;M subject to contract.
-                        </Text>
-
-                        <Text style={styles.bullet}>
-                            <Text style={styles.bulletTitle}>{'\u2022'} Cleaning Services: </Text>
-                            Three (3) month free-of-cost Solar Panel cleaning Service as per prevailing company policy. Thereafter, Customer will be charged for cleaning service subject to contract.
-                        </Text>
-
-                        <Text style={styles.bullet}>
-                            <Text style={styles.bulletTitle}>{'\u2022'} Payment Option: </Text>
-                        </Text>
-                        <View style={{ marginLeft: 30 }}>
-                            <Text style={styles.bullet}>{'-'} Delivery Timeline: Option 1: Within 15 days from date of confirmation of order</Text>
-                            <Text style={styles.bullet}>{'-'} Payment Terms: 60% advance payment of Indicative Price</Text>
-                            <View style={{ marginLeft: 45 }}>
-                                <Text style={styles.bullet}>{'\u2022'} 30% On Day Of Material Delivery</Text>
-                                <Text style={styles.bullet}>{'\u2022'} 10% After Installation</Text>
-                            </View>
-                        </View>
-
-                        <Text style={styles.bullet}>
-                            <Text style={styles.bulletTitle}>{'\u2022'} Net Metering: </Text>
-                            The Future Power will assist Customer in procuring Net Metering. The obligation to procure required approvals rests with the Customer. In no circumstances shall The Future Power be held liable on any account if the said approval is not granted by NEPRA. The Future Power will assist Customer to prepare the required documentation for Net-Metering. Other Customer responsibilities for Net Metering include:
-                        </Text>
-                        <View style={{ marginLeft: 30 }}>
-                            <Text style={styles.bullet}>{'-'} DC/AC Earthing</Text>
-                            <Text style={styles.bullet}>{'-'} Meter Name change</Text>
-                            <Text style={styles.bullet}>{'-'} Sanction load change</Text>
-                            <Text style={styles.bullet}>{'-'} Net-Metering demand notice payment</Text>
-                        </View>
-
-                        <Text style={[styles.bodyText, { marginTop: 8, fontSize: 8.5, fontStyle: 'italic', textAlign: 'justify' }]}>
-                            Note: Fee for facilitation services rendered in Net-Metering will be charged separately at per actual. It will be applicable as per the laws of NEPRA and local DISCO. This is an additional service for customer support. Timeline for Net-Metering to be operational depends on the NEPRA/DISCO approvals.
-                        </Text>
-                    </View>
-
-                    {/* Scope of Work */}
-                    <View style={[styles.section, { marginTop: 20 }]}>
-                        <Text style={[styles.sectionTitle, { fontSize: 10 }]}>Scope of Work (Not Included):</Text>
-                        <Text style={[styles.bodyText, { marginBottom: 10 }]}>Price does not include:</Text>
-                        <View style={{ marginLeft: 15 }}>
-                            <Text style={styles.numbered}>i.    Cost of any civil works,</Text>
-                            <Text style={styles.numbered}>ii.   Extra cable cost for length of cable beyond what is specified in Standard Scope of Work.</Text>
-                            <Text style={styles.numbered}>iii.  Interconnection between one distribution box to another distribution box and switched works and costs;</Text>
-                            <Text style={styles.numbered}>iv. Customized solutions, v. Special/Shed Type Structure, vi. Out of City system delivery to site</Text>
-                            <Text style={styles.numbered}>vii. Meter name change, viii. Meter sanctioned load change and I&amp;C required other than the above-mentioned scope of work shall be charged as per actual.</Text>
-                        </View>
-                    </View>
-
+                {/* Header — logo row, then title below (no overlap) */}
+                <View style={{
+                    flexDirection: 'row',
+                    justifyContent: 'flex-end',
+                    paddingRight: 30,
+                    paddingTop: 10,
+                }}>
+                    <Image src={logoUrl} style={s.proposalLogo} />
                 </View>
+
+                <Text style={s.proposalTitle}>
+                    {'FINANCIAL PROPOSAL FOR ' + systemKw + ' KW HYBRID SYSTEM'}
+                </Text>
+
+                {/* Items table */}
+                <View style={{ marginHorizontal: 30 }}>
+                    <View style={s.tableHeaderRow}>
+                        <Text style={[s.thCell, { width: W.no }]}>S. No.</Text>
+                        <Text style={[s.thCell, { width: W.item }]}>Item</Text>
+                        <Text style={[s.thCell, { flex: 1 }]}>Specification</Text>
+                        <Text style={[s.thCell, { width: W.unit }]}>Unit</Text>
+                        <Text style={[s.thCell, { width: W.qty }]}>Qty</Text>
+                    </View>
+
+                    {sortedItems.map((item, idx) => (
+                        <View
+                            key={item.id ?? idx}
+                            style={idx % 2 === 0 ? s.tableRow : s.tableRowAlt}
+                        >
+                            <Text style={[s.tdNum,  { width: W.no }]}>{idx + 1}</Text>
+                            <Text style={[s.tdItem, { width: W.item }]}>{getRowLabel(item)}</Text>
+                            <Text style={[s.tdSpec, { flex: 1 }]}>{buildSpec(item)}</Text>
+                            <Text style={[s.tdUnit, { width: W.unit }]}>{getUnit(item.itemType)}</Text>
+                            <Text style={[s.tdQty,  { width: W.qty }]}>{item.quantity}</Text>
+                        </View>
+                    ))}
+                </View>
+
+                {/* Pricing summary */}
+                <View style={s.summaryWrap}>
+                    <View style={s.summaryRow}>
+                        <Text style={s.summaryLabel}>Net Amount</Text>
+                        <Text style={s.summaryValue}>{fmtCurrency(quote.totalAmount)}</Text>
+                    </View>
+                    <View style={s.summaryRow}>
+                        <Text style={s.summaryLabel}>Total Discount</Text>
+                        <Text style={s.summaryValue}>{fmtCurrency(quote.discountAmount)}</Text>
+                    </View>
+                    <View style={s.summaryTotalRow}>
+                        <Text style={s.summaryTotalLabel}>Total Discounted Price</Text>
+                        <Text style={s.summaryTotalValue}>{fmtCurrency(quote.finalAmount)}</Text>
+                    </View>
+                </View>
+
+                {/* Optional notes */}
+                {quote.notes ? (
+                    <View style={{ marginTop: 10, marginHorizontal: 30 }}>
+                        <Text style={{ fontFamily: 'Montserrat', fontWeight: 'bold', fontSize: 7.5, color: TXT, marginBottom: 2 }}>NOTE:</Text>
+                        <Text style={{ fontFamily: 'Montserrat', fontSize: 7.5, color: TXT, lineHeight: 1.4 }}>{quote.notes}</Text>
+                    </View>
+                ) : null}
+
+                {/* Footer — same design as all other pages, repeats on continuation */}
+                <ProposalFooter />
             </Page>
 
-            {/* ══════════════════════════ PAGE 5 — ACKNOWLEDGEMENTS */}
-            <Page size="A4" style={styles.page}>
-                <PageBg pageNum={4} bgImage="qutationformat back 4.png" />
-                <View style={[styles.contentArea, { paddingTop: 110 }]}>
-                    <Text style={[styles.tableTitle, { fontSize: 20, marginBottom: 50 }]}>Acknowledgements</Text>
+            {/* ══════════════════════════════ PAGES 5–9 — STATIC CONTENT
+                  page-05 (alternative proposal template) is intentionally omitted.
+                  We go straight to T&C and Declaration. */}
 
-                    <Text style={[styles.paragraph, { fontSize: 10, lineHeight: 1.6, marginBottom: 50, textAlign: 'justify' }]}>
-                        I acknowledge and represent that I have read the terms and Conditions of this proposal and I fully
-                        understand what is stated Herein. I expressly agree to all the terms and conditions set out Herein and to
-                        adhere to all payment's obligations and other Ancillary obligations. In signing this proposal, I am not
-                        relying on Any other representation made by the company to me.
-                    </Text>
+            {/* Page 5: Terms & Conditions Part 1 (Sections 1–6) */}
+            <Page size="A4">
+                <Image src={`${PAGES}/page-06.png`} style={s.pageBg} />
+            </Page>
 
-                    <View style={[styles.sigContainer, { marginTop: 40 }]}>
-                        <View style={styles.sigBlock}>
-                            <View style={styles.sigLine} />
-                            <Text style={styles.sigLabel}>Customer Sign</Text>
-                            <View style={{ marginTop: 20 }}>
-                                {(['Name:', 'Date:', 'CNIC:'] as const).map((lbl) => (
-                                    <View style={styles.sigFieldRow} key={lbl}>
-                                        <Text style={styles.sigFieldLabel}>{lbl}</Text>
-                                        <View style={styles.sigFieldLine} />
-                                    </View>
-                                ))}
-                            </View>
-                        </View>
-                        <View style={styles.sigBlock}>
-                            <View style={styles.sigLine} />
-                            <Text style={styles.sigLabel}>Sales Representative Sign</Text>
-                            <View style={{ marginTop: 20 }}>
-                                {(['Name:', 'Date:'] as const).map((lbl) => (
-                                    <View style={styles.sigFieldRow} key={lbl}>
-                                        <Text style={styles.sigFieldLabel}>{lbl}</Text>
-                                        <View style={styles.sigFieldLine} />
-                                    </View>
-                                ))}
-                            </View>
-                        </View>
-                    </View>
-                </View>
+            {/* Page 6: Terms & Conditions Part 2 (Sections 7–11) */}
+            <Page size="A4">
+                <Image src={`${PAGES}/page-07.png`} style={s.pageBg} />
+            </Page>
+
+            {/* Page 7: Terms & Conditions Part 3 (Sections 12–13) */}
+            <Page size="A4">
+                <Image src={`${PAGES}/page-08.png`} style={s.pageBg} />
+            </Page>
+
+            {/* Page 8: Terms & Conditions Part 4 (Section 13 cont. + Scope) */}
+            <Page size="A4">
+                <Image src={`${PAGES}/page-09.png`} style={s.pageBg} />
+            </Page>
+
+            {/* Page 9: Customer Declaration + Acknowledgement */}
+            <Page size="A4">
+                <Image src={`${PAGES}/page-10.png`} style={s.pageBg} />
             </Page>
 
         </Document>
