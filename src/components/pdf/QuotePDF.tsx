@@ -367,7 +367,12 @@ export function QuotePDF({ quote }: QuotePDFProps) {
     const logoUrl = `${ASSET}/daytrack-logo.png`;
 
     // Column widths for the financial proposal table
-    const W = { no: 22, item: 72, unit: 36, qty: 24 };
+    const W = { no: 32, item: 125, unit: 62, qty: 48 };
+
+    const storedProfit = Number(quote.profitAmount ?? 0);
+    const profitAmt    = storedProfit > 0 ? storedProfit : Math.round(Number(quote.finalAmount) * 0.10);
+    const netAmount    = Number(quote.totalAmount) + profitAmt;
+    const totalDiscounted = Number(quote.finalAmount) + profitAmt;
 
     return (
         <Document>
@@ -406,12 +411,28 @@ export function QuotePDF({ quote }: QuotePDFProps) {
                             <Text style={s.coverCellValueTxt}>{preparedBy}</Text>
                         </View>
                     </View>
-                    <View style={s.coverRowBot}>
+                    <View style={s.coverRowTop}>
                         <View style={s.coverCellLabel}>
                             <Text style={s.coverCellLabelTxt}>Reference Number:</Text>
                         </View>
                         <View style={s.coverCellValue}>
                             <Text style={s.coverCellValueTxt}>{refNo}</Text>
+                        </View>
+                    </View>
+                    <View style={s.coverRowTop}>
+                        <View style={s.coverCellLabel}>
+                            <Text style={s.coverCellLabelTxt}>Customer Name:</Text>
+                        </View>
+                        <View style={s.coverCellValue}>
+                            <Text style={s.coverCellValueTxt}>{quote.customerName}</Text>
+                        </View>
+                    </View>
+                    <View style={s.coverRowBot}>
+                        <View style={s.coverCellLabel}>
+                            <Text style={s.coverCellLabelTxt}>Customer Address:</Text>
+                        </View>
+                        <View style={s.coverCellValue}>
+                            <Text style={s.coverCellValueTxt}>{quote.customerAddress || '—'}</Text>
                         </View>
                     </View>
                 </View>
@@ -484,7 +505,7 @@ export function QuotePDF({ quote }: QuotePDFProps) {
                 <View style={s.summaryWrap}>
                     <View style={s.summaryRow}>
                         <Text style={s.summaryLabel}>Net Amount</Text>
-                        <Text style={s.summaryValue}>{fmtCurrency(quote.totalAmount)}</Text>
+                        <Text style={s.summaryValue}>{fmtCurrency(netAmount)}</Text>
                     </View>
                     <View style={s.summaryRow}>
                         <Text style={s.summaryLabel}>Total Discount</Text>
@@ -492,7 +513,7 @@ export function QuotePDF({ quote }: QuotePDFProps) {
                     </View>
                     <View style={s.summaryTotalRow}>
                         <Text style={s.summaryTotalLabel}>Total Discounted Price</Text>
-                        <Text style={s.summaryTotalValue}>{fmtCurrency(quote.finalAmount)}</Text>
+                        <Text style={s.summaryTotalValue}>{fmtCurrency(totalDiscounted)}</Text>
                     </View>
                 </View>
 

@@ -278,7 +278,7 @@ export function QuoteBuilderPage() {
             customerEmail: customerInfo.email || undefined,
             customerAddress: customerInfo.address || undefined,
             systemSize: systemSize === '' ? undefined : Number(systemSize),
-            discountPercentage: Number(discount) || 0, notes: notes || undefined, status,
+            discountPercentage: Number(discount) || 0, profitAmount: effectiveProfit, notes: notes || undefined, status,
             items: cart.map(({ tempId, autoCalculated, panelWattage, basePricePerUnit, ...item }) => {
                 void tempId; void autoCalculated; void panelWattage; void basePricePerUnit;
                 return item;

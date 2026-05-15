@@ -310,6 +310,7 @@ export interface Quote {
     discountPercentage: number;
     discountAmount: number;
     finalAmount: number;
+    profitAmount: number;
     status: QuoteStatus;
     notes?: string;
     systemSize?: number;
@@ -337,6 +338,7 @@ export interface CreateQuoteDto {
     customerEmail?: string;
     customerAddress?: string;
     discountPercentage?: number;
+    profitAmount?: number;
     notes?: string;
     systemSize?: number;
     validUntil?: string;
